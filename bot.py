@@ -12,7 +12,6 @@ DB_FILE = "lessons.db"
 logging.basicConfig(level=logging.INFO)
 
 scheduler = AsyncIOScheduler()
-scheduler.start()
 
 lessons = [
     {"number": 1, "link": "https://example.com/lesson1"},
@@ -243,6 +242,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def schedule_checker(application):
     scheduler.add_job(send_scheduled_lessons, "interval", minutes=1, args=[application])
     scheduler.add_job(check_reminders, "interval", minutes=1, args=[application])
+    scheduler.start()
 
 
 if __name__ == "__main__":
