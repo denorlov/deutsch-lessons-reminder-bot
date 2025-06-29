@@ -13,11 +13,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, select, delete, insert
 
 TOKEN = os.environ.get("TOKEN")
-
-DATABASE_URL = (
-    f"postgresql+asyncpg://{os.environ.get('PGUSER')}:{os.environ.get('PGPASSWORD')}"
-    f"@{os.environ.get('PGHOST')}:{os.environ.get('PGPORT')}/{os.environ.get('PGDATABASE')}"
-)
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 print(f"database_url: {DATABASE_URL}")
 engine = create_async_engine(DATABASE_URL, echo=True)
