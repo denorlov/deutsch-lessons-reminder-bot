@@ -50,8 +50,20 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     async with aiosqlite.connect(DB_FILE) as db:
         await db.execute("INSERT OR IGNORE INTO users (chat_id) VALUES (?)", (chat_id,))
+        await db.execute("""
+                    INSERT INTO reminders (user_id, lesson_index, remind_at)
+                    SELECT id, 0, ?
+                    FROM users
+                    WHERE chat_id = ?
+                    AND NOT EXISTS (
+                        SELECT 1 FROM reminders WHERE user_id = users.id AND lesson_index = 0
+                    )
+        """, (datetime.now().isoformat(), chat_id))
         await db.commit()
     await update.message.reply_text("Привет! Я буду напоминать тебе проходить уроки.", reply_markup=main_keyboard)
+
+    await db.execute("INSERT OR IGNORE INTO users (chat_id) VALUES (?)", (chat_id,))
+
 
 
 async def send_scheduled_lessons(context: CallbackContext):
