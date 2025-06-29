@@ -5,8 +5,9 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackContext, ContextTypes, MessageHandler, filters, CallbackQueryHandler
+import os
 
-TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"  # Заменить на переменную окружения при деплое
+TOKEN = os.environ.get("TOKEN")
 DB_FILE = "lessons.db"
 
 scheduler = AsyncIOScheduler()
