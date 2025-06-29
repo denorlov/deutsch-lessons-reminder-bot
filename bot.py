@@ -255,12 +255,16 @@ async def main():
     app.add_handler(CommandHandler("my_reminders", my_reminders))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CallbackQueryHandler(button_handler))
+
     schedule_checker(app)
 
-    await app.run_polling()
+    await app.initialize()
+    await app.start()
+    await app.updater.start_polling()
 
+    # остаемся активными
+    while True:
+        await asyncio.sleep(3600)
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.create_task(main())
-    loop.run_forever()
+    asyncio.run(main())
