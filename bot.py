@@ -15,8 +15,8 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, select, de
 TOKEN = os.environ.get("TOKEN")
 
 DATABASE_URL = (
-    f"postgresql+asyncpg://{os.environ['PGUSER']}:{os.environ['PGPASSWORD']}"
-    f"@{os.environ['PGHOST']}:{os.environ['PGPORT']}/{os.environ['PGDATABASE']}"
+    f"postgresql+asyncpg://{os.environ.get('PGUSER')}:{os.environ.get('PGPASSWORD')}"
+    f"@{os.environ.get('PGHOST')}:{os.environ.get('PGPORT')}/{os.environ.get('PGDATABASE')}"
 )
 
 engine = create_async_engine(DATABASE_URL, echo=False)
