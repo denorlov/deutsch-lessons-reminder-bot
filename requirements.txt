@@ -1,3 +1,5 @@
 python-telegram-bot==20.3
 aiosqlite
 apscheduler
+asyncpg
+SQLAlchemy>=2.0
