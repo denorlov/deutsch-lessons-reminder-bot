@@ -244,23 +244,23 @@ def schedule_checker(application):
     scheduler.add_job(check_reminders, "interval", minutes=1, args=[application])
     scheduler.start()
 
+import asyncio
+
+async def main():
+    await init_db()
+    app = ApplicationBuilder().token(TOKEN).build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("set_schedule", set_schedule))
+    app.add_handler(CommandHandler("my_reminders", my_reminders))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.add_handler(CallbackQueryHandler(button_handler))
+    schedule_checker(app)
+
+    await app.run_polling()
+
 
 if __name__ == "__main__":
-    import asyncio
-    from telegram.ext import Application
-
-    async def main():
-        await init_db()
-        app = ApplicationBuilder().token(TOKEN).build()
-
-        app.add_handler(CommandHandler("start", start))
-        app.add_handler(CommandHandler("set_schedule", set_schedule))
-        app.add_handler(CommandHandler("my_reminders", my_reminders))
-        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-        app.add_handler(CallbackQueryHandler(button_handler))
-
-        schedule_checker(app)
-
-        await app.run_polling()
-
-    asyncio.run(main())
+    loop = asyncio.get_event_loop()
+    loop.create_task(main())
+    loop.run_forever()
