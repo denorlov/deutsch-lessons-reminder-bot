@@ -12,6 +12,14 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, select, delete, insert
 
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+logger = logging.getLogger(__name__)
+
 TOKEN = os.environ.get("TOKEN")
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
@@ -112,13 +120,15 @@ async def show_today_lessons(update: Update, chat_id):
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.info(f"update:{update}, context: {context}")
+
     text:String = update.message.text.lower()
     chat_id = update.effective_chat.id
 
     if "уроки" in text and "сегодня" in text:
         await show_today_lessons(update, chat_id)
     elif "уроки" in text and "все" in text:
-        show_all_lessons()
+        await show_all_lessons(update, context)
     elif text == "⚙️ Настроить расписание":
         await update.message.reply_text("Пока задай вручную: /set_schedule weekdays 08:00 21:00")
     else:
@@ -207,10 +217,11 @@ async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(f'Привет {update.effective_user.first_name}!')
 
 async def show_all_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = "📚 Все уроки курса:"
+    await update.message.reply_text(f"📚 Все уроки курса:")
     for idx, lesson in enumerate(lessons):
-        msg += f"<a href='{lesson['link']}'>Урок {lesson['title']}</a><br/>"
-    await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
+        msg = f"<a href='{lesson['link']}'>Урок {lesson['title']}</a>"
+        keyboard = build_keyboard()
+        await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard)
 
 async def main():
     await init_db()
