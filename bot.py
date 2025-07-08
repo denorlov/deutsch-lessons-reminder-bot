@@ -99,15 +99,15 @@ async def show_today_lessons(update: Update, chat_id):
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text:String = update.message.text
+    text:String = update.message.text.lower()
     chat_id = update.effective_chat.id
 
-    if text.lower().contains("Уроки на сегодня"):
+    if "уроки" in text and "сегодня" in text:
         await show_today_lessons(update, chat_id)
-    elif text == "📖 Показать все уроки курса":
+    elif "уроки" in text and "все" in text:
         msg = "📚 Все уроки курса:"
         for idx, lesson in enumerate(lessons):
-            msg += f"• <a href='https://t.me/{context.bot.username}?start=lesson{idx}'>Урок {lesson['title']}</a>"
+            msg += f"<a href='https://t.me/{context.bot.username}?start=lesson{idx}'>Урок {lesson['title']}</a><br/>"
         await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
     elif text == "⚙️ Настроить расписание":
         await update.message.reply_text("Пока задай вручную: /set_schedule weekdays 08:00 21:00")
@@ -193,11 +193,15 @@ async def check_reminders(context: CallbackContext):
             await send_lesson_by_user(session, user, reminder, context)
             await session.commit()
 
+async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text(f'Привет {update.effective_user.first_name}!')
+
 async def main():
     await init_db()
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("hello", hello))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     # app.add_handler(CallbackQueryHandler(lambda u, c: u.callback_query.answer("Stub")))
 
