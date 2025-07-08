@@ -190,7 +190,7 @@ async def check_reminders(context: CallbackContext):
         reminders = result.scalars().all()
         for reminder in reminders:
             user = await session.get(User, reminder.user_id)
-            await send_lesson_by_user(session, user, reminder, context)
+            await send_lesson_by_user(user, reminder, context)
             await session.commit()
 
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
