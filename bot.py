@@ -15,7 +15,6 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, select, de
 TOKEN = os.environ.get("TOKEN")
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
-print(f"database_url: {DATABASE_URL}")
 engine = create_async_engine(DATABASE_URL, echo=True)
 async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()
@@ -23,9 +22,9 @@ Base = declarative_base()
 scheduler = AsyncIOScheduler()
 
 lessons = [
-    {"number": 1, "link": "https://example.com/lesson1"},
-    {"number": 2, "link": "https://example.com/lesson2"},
-    {"number": 3, "link": "https://example.com/lesson3"},
+    {"title" : "Lektion 1. Личные местоимения", "link": "https://web.telegram.org/a/#-1002054418094_43"},
+    {"title" : "Lektion 2. Тренировка личных местоимений", "link": "https://web.telegram.org/a/#-1002054418094_52"},
+    {"title" : "Lektion 3. Глагол sein (быть)", "link": "https://web.telegram.org/a/#-1002054418094_58"}
 ]
 
 main_keyboard = ReplyKeyboardMarkup([
@@ -37,7 +36,6 @@ class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
     chat_id = Column(Integer, unique=True)
-    current_lesson = Column(Integer, default=0)
     schedule = Column(String, default='everyday 08:00')
 
 class Reminder(Base):
@@ -48,7 +46,6 @@ class Reminder(Base):
     remind_at = Column(DateTime)
 
 def schedule_checker(application):
-    scheduler.add_job(send_scheduled_lessons, "interval", minutes=1, args=[application])
     scheduler.add_job(check_reminders, "interval", minutes=1, args=[application])
     scheduler.start()
 
@@ -71,38 +68,120 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             session.add(reminder)
             await session.commit()
 
-    await update.message.reply_text(
-        "Привет! Я буду напоминать тебе проходить уроки.",
-        reply_markup=main_keyboard
-    )
+    await show_today_lessons(update, chat_id)
 
-async def send_scheduled_lessons(context: CallbackContext):
-    now = datetime.now().strftime("%H:%M")
+async def show_today_lessons(update: Update, chat_id):
     async with async_session() as session:
-        result = await session.execute(select(User))
-        users = result.scalars().all()
-        for user in users:
-            if user.schedule.startswith("everyday"):
-                times = user.schedule.split()[1:]
-                if now in times:
-                    await send_lesson(user.chat_id, user.id, context)
+        result = await session.execute(select(User).where(User.chat_id == chat_id))
+        user = result.scalar_one_or_none()
+        if not user:
+            await update.message.reply_text("Ты ещё не зарегистрирован. Напиши /start")
+            return
 
-async def send_lesson(chat_id, user_id, context: CallbackContext):
-    async with async_session() as session:
-        user = await session.get(User, user_id)
-        index = user.current_lesson
-        if 0 <= index < len(lessons):
-            lesson = lessons[index]
-            text = f"📘 Пройди урок {lesson['number']} — {lesson['link']}"
-            keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton("✅ Я прошёл — след. урок", callback_data="next_lesson")],
-                [
-                    InlineKeyboardButton("🔁 Через 1д", callback_data="remind_1"),
-                    InlineKeyboardButton("🔁 3д", callback_data="remind_3"),
-                    InlineKeyboardButton("🔁 5д", callback_data="remind_5")
-                ]
-            ])
-            await context.bot.send_message(chat_id=chat_id, text=text, reply_markup=keyboard)
+        result = await session.execute(
+            select(Reminder.lesson_index).where(
+                Reminder.user_id == user.id,
+                Reminder.remind_at <= datetime.now()
+            )
+        )
+        indices = sorted(set(row[0] for row in result.fetchall()))
+
+        if not indices:
+            await update.message.reply_text("На сегодня нет уроков для напоминания.")
+            return
+
+        msg = "📋 Уроки на сегодня:"
+        for idx in indices:
+            if 0 <= idx < len(lessons):
+                lesson = lessons[idx]
+                msg += f"• <a href='{lesson['link']}'>Урок {lesson['title']}</a>"
+        await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
+
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text:String = update.message.text
+    chat_id = update.effective_chat.id
+
+    if text.lower().contains("Уроки на сегодня"):
+        await show_today_lessons(update, chat_id)
+    elif text == "📖 Показать все уроки курса":
+        msg = "📚 Все уроки курса:"
+        for idx, lesson in enumerate(lessons):
+            msg += f"• <a href='https://t.me/{context.bot.username}?start=lesson{idx}'>Урок {lesson['title']}</a>"
+        await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
+    elif text == "⚙️ Настроить расписание":
+        await update.message.reply_text("Пока задай вручную: /set_schedule weekdays 08:00 21:00")
+    else:
+        await update.message.reply_text("Не понимаю. Выбери из меню.")
+
+def build_keyboard():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("✅ Я прошел, следующий", callback_data="next_lesson")],
+        [InlineKeyboardButton("✅ Повторить предыдущий", callback_data="prev_lesson")],
+        [
+            InlineKeyboardButton("🔁 Через 1д", callback_data="remind_1"),
+            InlineKeyboardButton("🔁 2д", callback_data="remind_2"),
+            InlineKeyboardButton("🔁 3д", callback_data="remind_3")
+        ]
+    ])
+
+# async def send_lesson(chat_id, user_id, context: ContextTypes.DEFAULT_TYPE):
+#     idx = user_data.get(user_id, {}).get("lesson_index", 0)
+#     if idx < 0: idx = 0
+#     if idx >= len(lessons): idx = len(lessons) - 1
+#     user_data[user_id]["lesson_index"] = idx
+#     lesson = lessons[idx]
+#     text = f"📘 Пройди урок номер {lesson['number']}, ссылка: {lesson['link']}"
+#     await context.bot.send_message(chat_id=chat_id, text=text, reply_markup=build_keyboard())
+
+# async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+#     query = update.callback_query
+#     user_id = query.from_user.id
+#     await query.answer()
+#
+#     if query.data == "next_lesson":
+#         user_data[user_id]["lesson_index"] += 1
+#         await send_lesson(query.message.chat_id, user_id, context)
+#
+#     elif query.data == "prev_lesson":
+#         user_data[user_id]["lesson_index"] -= 1
+#         await send_lesson(query.message.chat_id, user_id, context)
+#
+#     elif query.data == "remind_later":
+#         keyboard = InlineKeyboardMarkup([
+#             [InlineKeyboardButton("Через 1 день", callback_data="remind_in_1")],
+#             [InlineKeyboardButton("Через 2 дня", callback_data="remind_in_2")],
+#             [InlineKeyboardButton("Через 3 дня", callback_data="remind_in_3")]
+#         ])
+#         await query.edit_message_reply_markup(reply_markup=keyboard)
+#
+#     elif query.data.startswith("remind_in_"):
+#         days = int(query.data.split("_")[-1])
+#         schedule_reminder(user_id, query.message.chat_id, interval_days=days, context=context)
+#         await context.bot.send_message(chat_id=query.message.chat_id, text=f"📅 Хорошо! Напомню через {days} дней.")
+#
+# def schedule_reminder(user_id, chat_id, interval_days, context, hour=8, minute=0):
+#     job_id = f"reminder_{user_id}"
+#     scheduler.remove_job(job_id=job_id, jobstore=None) if scheduler.get_job(job_id) else None
+#     scheduler.add_job(
+#         send_lesson,
+#         'interval',
+#         days=interval_days,
+#         start_date=datetime.now().replace(hour=hour, minute=minute, second=0) + timedelta(days=0),
+#         args=[chat_id, user_id, context],
+#         id=job_id,
+#         replace_existing=True
+#     )
+
+async def send_lesson_by_user(user, reminder, context):
+    index = reminder.lesson_index
+    if 0 <= index < len(lessons):
+        lesson = lessons[index]
+        text = f"📘 Пройди урок {lesson['title']} — {lesson['link']}"
+
+        keyboard = build_keyboard()
+        await context.bot.send_message(chat_id=user.chat_id, text=text, reply_markup=keyboard)
+
 
 async def check_reminders(context: CallbackContext):
     now = datetime.now()
@@ -111,9 +190,8 @@ async def check_reminders(context: CallbackContext):
         reminders = result.scalars().all()
         for reminder in reminders:
             user = await session.get(User, reminder.user_id)
-            await send_lesson(user.chat_id, user.id, context)
-            await session.delete(reminder)
-        await session.commit()
+            await send_lesson_by_user(session, user, reminder, context)
+            await session.commit()
 
 async def main():
     await init_db()
