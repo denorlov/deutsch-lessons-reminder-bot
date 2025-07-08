@@ -209,7 +209,7 @@ async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def show_all_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = "📚 Все уроки курса:"
     for idx, lesson in enumerate(lessons):
-        msg += f"<a href='https://t.me/{context.bot.username}?start=lesson{idx}'>Урок {lesson['title']}</a><br/>"
+        msg += f"<a href='{lesson['link']}'>Урок {lesson['title']}</a><br/>"
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
 
 async def main():
