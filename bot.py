@@ -46,7 +46,20 @@ class Reminder(Base):
     remind_at = Column(DateTime)
 
 def schedule_checker(application):
-    scheduler.add_job(check_reminders, "interval", minutes=1, args=[application])
+    # job_id = f"reminder_{user_id}"
+    # scheduler.remove_job(job_id=job_id, jobstore=None) if scheduler.get_job(job_id) else None
+    # scheduler.add_job(
+    #     send_lesson,
+    #     'interval',
+    #     days=interval_days,
+    #     start_date=datetime.now().replace(hour=hour, minute=minute, second=0) + timedelta(days=0),
+    #     args=[chat_id, user_id, context],
+    #     id=job_id,
+    #     replace_existing=True
+    # )
+    #
+    # initialise using all registered users and their schedules
+    scheduler.add_job(check_reminders, "interval", days=1, args=[application])
     scheduler.start()
 
 async def init_db():
@@ -94,7 +107,7 @@ async def show_today_lessons(update: Update, chat_id):
         for idx in indices:
             if 0 <= idx < len(lessons):
                 lesson = lessons[idx]
-                msg += f"• <a href='{lesson['link']}'>Урок {lesson['title']}</a>"
+                msg += f"<a href='{lesson['link']}'>Урок {lesson['title']}</a>"
         await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
 
 
@@ -105,10 +118,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "уроки" in text and "сегодня" in text:
         await show_today_lessons(update, chat_id)
     elif "уроки" in text and "все" in text:
-        msg = "📚 Все уроки курса:"
-        for idx, lesson in enumerate(lessons):
-            msg += f"<a href='https://t.me/{context.bot.username}?start=lesson{idx}'>Урок {lesson['title']}</a><br/>"
-        await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
+        show_all_lessons()
     elif text == "⚙️ Настроить расписание":
         await update.message.reply_text("Пока задай вручную: /set_schedule weekdays 08:00 21:00")
     else:
@@ -196,14 +206,20 @@ async def check_reminders(context: CallbackContext):
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(f'Привет {update.effective_user.first_name}!')
 
+async def show_all_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = "📚 Все уроки курса:"
+    for idx, lesson in enumerate(lessons):
+        msg += f"<a href='https://t.me/{context.bot.username}?start=lesson{idx}'>Урок {lesson['title']}</a><br/>"
+    await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
+
 async def main():
     await init_db()
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("hello", hello))
+    app.add_handler(CommandHandler("all_lessons", show_all_lessons))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    # app.add_handler(CallbackQueryHandler(lambda u, c: u.callback_query.answer("Stub")))
 
     schedule_checker(app)
 
