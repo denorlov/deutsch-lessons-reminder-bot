@@ -30,9 +30,9 @@ Base = declarative_base()
 scheduler = AsyncIOScheduler()
 
 lessons = [
-    {"title" : "Lektion 1. Личные местоимения", "link": "https://t.me/c/1002054418094/43"},
-    {"title" : "Lektion 2. Тренировка личных местоимений", "link": "https://t.me/c/1002054418094/52"},
-    {"title" : "Lektion 3. Глагол sein (быть)", "link": "https://t.me/c/2098391193/19"}
+    {"title" : "Lektion 1. Личные местоимения", "link": "https://t.me/c/2054418094/48?thread=43"},
+    {"title" : "Lektion 2. Тренировка личных местоимений", "link": "https://t.me/c/2054418094/56?thread=52"},
+    {"title" : "Lektion 3. Глагол sein (быть)", "link": "https://t.me/c/2054418094/64?thread=58"}
 ]
 
 main_keyboard = ReplyKeyboardMarkup([
