@@ -112,7 +112,7 @@ async def show_today_lessons(update: Update, context : ContextTypes.DEFAULT_TYPE
             await update.message.reply_text("На сегодня нет уроков для напоминания.")
             return
 
-        await update.message.reply_text(msg = "📋 Уроки на сегодня:")
+        await update.message.reply_text("📋 Уроки на сегодня:")
         for idx in indices:
             if 0 <= idx < len(lessons):
                 lesson = lessons[idx]
