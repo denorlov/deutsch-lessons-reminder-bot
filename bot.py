@@ -114,13 +114,13 @@ async def show_today_lessons(update: Update, context : ContextTypes.DEFAULT_TYPE
             await update.message.reply_text("На сегодня нет уроков для напоминания.")
             return
 
-        #await update.message.reply_text("📋 Уроки на сегодня:")
+        await update.message.reply_text("📋 Уроки на сегодня:")
         for idx in indices:
             if 0 <= idx < len(lessons):
                 lesson = lessons[idx]
                 msg = f"<a href='{lesson['link']}'>{lesson['title']}</a>"
                 keyboard = build_keyboard()
-                await update.message.reply_text(msg, parse_mode=ParseMode.HTML, link_preview_options=LinkPreviewOptions(is_disabled=True), reply_markup=keyboard)
+                await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard, link_preview_options=LinkPreviewOptions(is_disabled=True))
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
