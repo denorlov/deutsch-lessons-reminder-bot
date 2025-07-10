@@ -30,8 +30,8 @@ Base = declarative_base()
 scheduler = AsyncIOScheduler()
 
 lessons = [
-    {"title" : "Lektion 1. Личные местоимения", "link": "https://web.telegram.org/a/#-1002054418094_43"},
-    {"title" : "Lektion 2. Тренировка личных местоимений", "link": "https://web.telegram.org/a/#-1002054418094_52"},
+    {"title" : "Lektion 1. Личные местоимения", "link": "https://t.me/c/1002054418094/43"},
+    {"title" : "Lektion 2. Тренировка личных местоимений", "link": "https://t.me/c/1002054418094/52"},
     {"title" : "Lektion 3. Глагол sein (быть)", "link": "https://t.me/c/2098391193/19"}
 ]
 
@@ -111,12 +111,13 @@ async def show_today_lessons(update: Update, chat_id):
             await update.message.reply_text("На сегодня нет уроков для напоминания.")
             return
 
-        msg = "📋 Уроки на сегодня:"
+        await update.message.reply_text(msg = "📋 Уроки на сегодня:")
         for idx in indices:
             if 0 <= idx < len(lessons):
                 lesson = lessons[idx]
-                msg += f"<a href='{lesson['link']}'>Урок {lesson['title']}</a>"
-        await update.message.reply_text(msg, parse_mode=ParseMode.HTML, link_preview_options=LinkPreviewOptions(is_disabled=True))
+                msg = f"<a href='{lesson['link']}'>{lesson['title']}</a>"
+                keyboard = build_keyboard()
+                await update.message.reply_text(msg, parse_mode=ParseMode.HTML, link_preview_options=LinkPreviewOptions(is_disabled=True), keyboard=keyboard)
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
