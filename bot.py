@@ -89,9 +89,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             session.add(reminder)
             await session.commit()
 
-    await show_today_lessons(update, chat_id)
+    await show_today_lessons(update, context)
 
-async def show_today_lessons(update: Update, chat_id):
+async def show_today_lessons(update: Update, context : ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
     async with async_session() as session:
         result = await session.execute(select(User).where(User.chat_id == chat_id))
         user = result.scalar_one_or_none()
@@ -230,6 +231,7 @@ async def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("today", show_today_lessons))
     app.add_handler(CommandHandler("hello", hello))
     app.add_handler(CommandHandler("all", show_all_lessons))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
