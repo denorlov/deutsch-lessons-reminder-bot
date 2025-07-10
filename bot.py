@@ -120,7 +120,7 @@ async def show_today_lessons(update: Update, context : ContextTypes.DEFAULT_TYPE
                 lesson = lessons[idx]
                 msg = f"<a href='{lesson['link']}'>{lesson['title']}</a>"
                 keyboard = build_keyboard()
-                await update.message.reply_text(msg, parse_mode=ParseMode.HTML, link_preview_options=LinkPreviewOptions(is_disabled=True), keyboard=keyboard)
+                await update.message.reply_text(msg, parse_mode=ParseMode.HTML, link_preview_options=LinkPreviewOptions(is_disabled=True), reply_markup=keyboard)
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
