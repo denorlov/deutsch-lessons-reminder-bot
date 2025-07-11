@@ -94,9 +94,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await show_today_lessons(update, context)
 
 async def show_today_lessons(update: Update, context : ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
     async with async_session() as session:
-        result = await session.execute(select(User).where(User.chat_id == chat_id))
+        result = await session.execute(select(User).where(User.id == update.effective_user.id))
         user = result.scalar_one_or_none()
 
         if not user:
@@ -238,7 +237,7 @@ async def check_reminders(context: CallbackContext):
             await session.commit()
 
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text(f'Привет {update.effective_user.first_name}!', reply_markup=main_keyboard)
+    await update.message.reply_text(f'Привет {update.effective_user.first_name}, user.name:{update.effective_user.name}, chat.id:{update.effective_chat.id}, {update.effective_chat.effective_name}!', reply_markup=main_keyboard)
 
 async def show_all_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"📚 Все уроки курса:")
