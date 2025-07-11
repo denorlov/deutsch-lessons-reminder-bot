@@ -252,7 +252,7 @@ async def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("settings", show_schedule()))
+    app.add_handler(CommandHandler("settings", show_schedule))
     app.add_handler(CommandHandler("today", show_today_lessons))
     app.add_handler(CommandHandler("help", hello))
     app.add_handler(CommandHandler("all", show_all_lessons))
