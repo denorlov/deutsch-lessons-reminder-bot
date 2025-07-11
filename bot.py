@@ -94,8 +94,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await show_today_lessons(update, context)
 
 async def show_today_lessons(update: Update, context : ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
     async with async_session() as session:
-        result = await session.execute(select(User).where(User.id == update.effective_user.id))
+        result = await session.execute(select(User).where(User.chat_id == chat_id))
         user = result.scalar_one_or_none()
 
         if not user:
@@ -121,10 +122,6 @@ async def show_today_lessons(update: Update, context : ContextTypes.DEFAULT_TYPE
             if 0 <= idx < len(lessons):
                 lesson = lessons[idx]
                 await show_lesson(update, lesson)
-        main_keyboard
-        await update.message.reply_text("📋 Уроки на сегодня:")
-        # await update.message.reply_text("", reply_markup=main_keyboard)
-
 
 async def show_lesson(update, lesson):
     msg = f"<a href='{lesson['link']}'>{lesson['title']}</a>"
