@@ -76,6 +76,9 @@ async def init_db():
         await conn.run_sync(Base.metadata.create_all)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await context.bot.set_my_commands([('start', 'Starts the bot'), ('today', "Уроки на сегодня"), ('settings', "Настроить расписание")])
+    await context.bot.set_chat_menu_button()
+
     chat_id = update.effective_chat.id
     async with async_session() as session:
         result = await session.execute(select(User).where(User.chat_id == chat_id))
@@ -260,9 +263,6 @@ async def main():
 
     await app.initialize()
     await app.start()
-
-    await app.bot.set_my_commands([('start', 'Starts the bot'), ('today', "Уроки на сегодня"), ('settings', "Настроить расписание")])
-    await app.bot.set_chat_menu_button()
 
     await app.updater.start_polling()
 
