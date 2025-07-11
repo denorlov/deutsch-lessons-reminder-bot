@@ -121,6 +121,7 @@ async def show_today_lessons(update: Update, context : ContextTypes.DEFAULT_TYPE
             if 0 <= idx < len(lessons):
                 lesson = lessons[idx]
                 await show_lesson(update, lesson)
+        await update.message.reply_text("", reply_markup=main_keyboard)
 
 
 async def show_lesson(update, lesson):
