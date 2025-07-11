@@ -13,6 +13,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, select, delete, insert
 
 import logging
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -96,6 +97,7 @@ async def show_today_lessons(update: Update, context : ContextTypes.DEFAULT_TYPE
     async with async_session() as session:
         result = await session.execute(select(User).where(User.chat_id == chat_id))
         user = result.scalar_one_or_none()
+
         if not user:
             await update.message.reply_text("Ты ещё не зарегистрирован. Напиши /start")
             return
@@ -160,15 +162,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def build_keyboard():
     return InlineKeyboardMarkup([
+        InlineKeyboardButton("🔁 Напомнить через", callback_data="remind_1"),
         [
-            InlineKeyboardButton("⏮ Вернуться к предыдущем", callback_data="next_lesson"),
-            InlineKeyboardButton("⏭ Следующий урок", callback_data="prev_lesson"),
-            InlineKeyboardButton("✅ Прошел, больше не напоминать", callback_data="next_lesson")
+            InlineKeyboardButton("1д", callback_data="remind_1"),
+            InlineKeyboardButton("2д", callback_data="remind_2"),
+            InlineKeyboardButton("3д", callback_data="remind_3")
         ],
         [
-            InlineKeyboardButton("🔁 Напомнить через 1д", callback_data="remind_1"),
-            InlineKeyboardButton("🔁 через 2д", callback_data="remind_2"),
-            InlineKeyboardButton("🔁 через 3д", callback_data="remind_3")
+            InlineKeyboardButton("⏮ Вернуться к предыдущем", callback_data="prev_lesson"),
+            InlineKeyboardButton("✅ Прошел, больше не напоминать", callback_data="complete_lesson"),
+            InlineKeyboardButton("⏭ Прошел, перейти к следующему", callback_data="next_lesson")
         ]
     ])
 
@@ -245,8 +248,9 @@ async def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("settings", show_schedule()))
     app.add_handler(CommandHandler("today", show_today_lessons))
-    app.add_handler(CommandHandler("hello", hello))
+    app.add_handler(CommandHandler("help", hello))
     app.add_handler(CommandHandler("all", show_all_lessons))
     app.add_handler(CommandHandler("schedule", show_schedule))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
@@ -255,6 +259,10 @@ async def main():
 
     await app.initialize()
     await app.start()
+
+    await app.bot.set_my_commands([('start', 'Starts the bot'), ('today', "Уроки на сегодня"), ('settings', "Настроить расписание")])
+    await app.bot.set_chat_menu_button()
+
     await app.updater.start_polling()
 
     while True:
