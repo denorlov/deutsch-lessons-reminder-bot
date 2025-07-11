@@ -140,7 +140,8 @@ async def show_schedule(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await update.message.reply_text("Пока редактирование не доступно")
         await update.message.reply_text(f"Текущее расписание: для user.id={user.id}, chat_id:{user.chat_id}, schedule: {user.schedule}")
-        await update.message.reply_text(f"{scheduler.get_jobs()}")
+        for job in scheduler.get_jobs():
+            await update.message.reply_text(f"{job.id}, {job.name}, trigger:{job.trigger}, next run time:{job.next_run_time}")
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
