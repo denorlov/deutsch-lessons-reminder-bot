@@ -162,7 +162,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def build_keyboard():
     return InlineKeyboardMarkup([
-        InlineKeyboardButton("🔁 Напомнить через", callback_data="remind_1"),
+        [InlineKeyboardButton("🔁 Напомнить через", callback_data="remind_1")],
         [
             InlineKeyboardButton("1д", callback_data="remind_1"),
             InlineKeyboardButton("2д", callback_data="remind_2"),
