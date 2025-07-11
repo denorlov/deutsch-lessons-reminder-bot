@@ -176,7 +176,7 @@ def build_keyboard():
             InlineKeyboardButton("✅ Прошел, больше не напоминать", callback_data="complete_lesson"),
             InlineKeyboardButton("⏭ Прошел, перейти к следующему", callback_data="next_lesson")
         ]
-    ], resize_keyboard=True)
+    ])
 
 # async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 #     query = update.callback_query
