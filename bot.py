@@ -76,9 +76,6 @@ async def init_db():
         await conn.run_sync(Base.metadata.create_all)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.set_my_commands([('start', 'Starts the bot'), ('today', "Уроки на сегодня"), ('settings', "Настроить расписание")])
-    await context.bot.set_chat_menu_button()
-
     chat_id = update.effective_chat.id
     async with async_session() as session:
         result = await session.execute(select(User).where(User.chat_id == chat_id))
@@ -93,6 +90,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             session.add(reminder)
             await session.commit()
 
+    await hello(update, context)
     await show_today_lessons(update, context)
 
 async def show_today_lessons(update: Update, context : ContextTypes.DEFAULT_TYPE):
@@ -124,7 +122,9 @@ async def show_today_lessons(update: Update, context : ContextTypes.DEFAULT_TYPE
             if 0 <= idx < len(lessons):
                 lesson = lessons[idx]
                 await show_lesson(update, lesson)
-        await update.message.reply_text("", reply_markup=main_keyboard)
+        main_keyboard
+        await update.message.reply_text("📋 Уроки на сегодня:")
+        # await update.message.reply_text("", reply_markup=main_keyboard)
 
 
 async def show_lesson(update, lesson):
@@ -177,7 +177,7 @@ def build_keyboard():
             InlineKeyboardButton("✅ Прошел, больше не напоминать", callback_data="complete_lesson"),
             InlineKeyboardButton("⏭ Прошел, перейти к следующему", callback_data="next_lesson")
         ]
-    ])
+    ], resize_keyboard=True)
 
 # async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 #     query = update.callback_query
@@ -238,7 +238,7 @@ async def check_reminders(context: CallbackContext):
             await session.commit()
 
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text(f'Привет {update.effective_user.first_name}!')
+    await update.message.reply_text(f'Привет {update.effective_user.first_name}!', reply_markup=main_keyboard)
 
 async def show_all_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"📚 Все уроки курса:")
