@@ -36,7 +36,7 @@ lessons = [
 ]
 
 main_keyboard = ReplyKeyboardMarkup([
-    [KeyboardButton("📚 Уроки на сегодня")],
+    [KeyboardButton("📋 Уроки на сегодня")],
     [KeyboardButton("⚙️ Настроить расписание")]
 ], resize_keyboard=True)
 
@@ -118,31 +118,42 @@ async def show_today_lessons(update: Update, context : ContextTypes.DEFAULT_TYPE
         for idx in indices:
             if 0 <= idx < len(lessons):
                 lesson = lessons[idx]
-                msg = f"<a href='{lesson['link']}'>{lesson['title']}</a>"
-                keyboard = build_keyboard()
-                await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard, link_preview_options=LinkPreviewOptions(is_disabled=True))
+                await show_lesson(update, lesson)
+
+
+async def show_lesson(update, lesson):
+    msg = f"<a href='{lesson['link']}'>{lesson['title']}</a>"
+    keyboard = build_keyboard()
+    await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard,
+                                    link_preview_options=LinkPreviewOptions(is_disabled=True))
+
+
+async def show_schedule(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    async with async_session() as session:
+        result = await session.execute(select(User).where(User.chat_id == chat_id))
+        user = result.scalar_one_or_none()
+
+        if not user:
+            await update.message.reply_text("Ты ещё не зарегистрирован. Напиши /start")
+            return
+
+        await update.message.reply_text("Пока редактирование не доступно")
+        await update.message.reply_text(f"Текущее расписание: для user.id={user.id}, chat_id:{user.chat_id}, schedule: {user.schedule}")
+        await update.message.reply_text(f"{scheduler.get_jobs()}")
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"update:{update}, context: {context}")
 
     text:String = update.message.text.lower()
-    chat_id = update.effective_chat.id
 
     if "уроки" in text and "сегодня" in text:
-        await show_today_lessons(update, chat_id)
+        await show_today_lessons(update, context)
     elif "уроки" in text and "все" in text:
         await show_all_lessons(update, context)
-    elif text == "⚙️ Настроить расписание":
-        async with async_session() as session:
-            result = await session.execute(select(User).where(User.chat_id == chat_id))
-            user = result.scalar_one_or_none()
-
-            if not user:
-                await update.message.reply_text("Ты ещё не зарегистрирован. Напиши /start")
-                return
-
-            await update.message.reply_text("Пока редактирование не доступно. Текущее расписание: каждый день в {user.schedule}")
+    elif "расписание" in text:
+        await show_schedule(update, context)
     else:
         await update.message.reply_text("Не понимаю. Выбери из меню.")
 
@@ -205,7 +216,7 @@ async def send_lesson_by_user(user, reminder, context):
         lesson = lessons[index]
         msg = f"📘 Пройди урок <a href='{lesson['link']}'>{lesson['title']}</a>"
         keyboard = build_keyboard()
-        await context.bot.send_message(chat_id=user.chat_id, text=msg, reply_markup=keyboard, link_preview_options=LinkPreviewOptions(is_disabled=True))
+        await context.bot.send_message(chat_id=user.chat_id, text=msg, reply_markup=keyboard, link_preview_options=LinkPreviewOptions(is_disabled=True), parse_mode=ParseMode.HTML)
 
 
 async def check_reminders(context: CallbackContext):
@@ -236,6 +247,7 @@ async def main():
     app.add_handler(CommandHandler("today", show_today_lessons))
     app.add_handler(CommandHandler("hello", hello))
     app.add_handler(CommandHandler("all", show_all_lessons))
+    app.add_handler(CommandHandler("schedule", show_schedule))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     schedule_checker(app)
