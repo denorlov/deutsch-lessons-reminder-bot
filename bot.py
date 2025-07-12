@@ -183,7 +183,7 @@ async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     user_id = query.from_user.id
 
-    await query.answer()
+    # await query.answer()
 
     # if query.data == "next_lesson":
     #     user_data[user_id]["lesson_index"] += 1
@@ -201,23 +201,23 @@ async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 InlineKeyboardButton("3д", callback_data="remind_3")
             ],
             [
-                [InlineKeyboardButton("5 дней", callback_data="remind_5")],
-                [InlineKeyboardButton("неделю", callback_data="remind_7")],
+                InlineKeyboardButton("5 дней", callback_data="remind_5"),
+                InlineKeyboardButton("неделю", callback_data="remind_7"),
             ],
             [
-                [InlineKeyboardButton("2 недели", callback_data="remind_14")],
-                [InlineKeyboardButton("месяц", callback_data="remind_30")]
+                InlineKeyboardButton("2 недели", callback_data="remind_14"),
+                InlineKeyboardButton("месяц", callback_data="remind_30")
             ]
         ])
-        await query.edit_message_reply_markup(reply_markup=keyboard)
+        await query.answer(reply_markup=keyboard)
 
     elif query.data == "next_or_prev":
-        keyboard = InlineKeyboardMarkup([[
-            InlineKeyboardButton("⏮ Вернуться к предыдущем", callback_data="prev_lesson"),
-            InlineKeyboardButton("⏸ Больше не напоминать", callback_data="complete_lesson"),
-            InlineKeyboardButton("✅ Перейти к следующему", callback_data="next_lesson")
-        ]])
-        await query.edit_message_reply_markup(reply_markup=keyboard)
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("⏮ Вернуться к предыдущем", callback_data="prev_lesson")],
+            [InlineKeyboardButton("⏸ Больше не напоминать", callback_data="complete_lesson")],
+            [InlineKeyboardButton("✅ Перейти к следующему", callback_data="next_lesson")]
+        ])
+        await query.answer(reply_markup=keyboard)
 
     elif query.data.startswith("remind_in_"):
         days = int(query.data.split("_")[-1])
