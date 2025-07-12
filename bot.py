@@ -151,10 +151,10 @@ async def show_schedule(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await update.message.reply_text("Пока редактирование не доступно")
         await update.message.reply_text(
-            f"Текущее расписание: для user.id={user.id}, chat_id:{user.chat_id}, schedule: {user.schedule}")
+            f"Текущее расписание: user.id={user.id}, chat_id:{user.chat_id}, schedule: {user.schedule}")
         for job in scheduler.get_jobs():
             await update.message.reply_text(
-                f"{job.id}, {job.name}, trigger:{job.trigger}, next run time:{job.next_run_time}")
+                f"job id:{job.id}, name:{job.name}, trigger:{job.trigger}, next run time:{job.next_run_time}")
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -181,7 +181,6 @@ def build_keyboard():
 
 async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    user_id = query.from_user.id
 
     await query.answer()
 
@@ -221,37 +220,65 @@ async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data.startswith("remind_"):
         days = int(query.data.split("_")[-1])
         chat_id = query.message.chat_id
-        await schedule_reminder(query, chat_id, interval_days=days, context=context)
-        await context.bot.send_message(chat_id=chat_id, text=f"📅 Хорошо! Напомню через {days} дней.")
+        await update_reminder_to_next_time(query, chat_id, interval_days=days, context=context)
 
 
-async def schedule_reminder(query, chat_id, interval_days, context):
-    reminder_id = 0
+async def update_reminder_to_next_lesson(update, lesson_index, context):
+    chat_id = update.effective_chat.id
     async with async_session() as session:
-        reminder = await session.get(Reminder, reminder_id)
+        result = await session.execute(
+            select(Reminder)
+            .join(User)
+            .where(
+                User.chat_id == chat_id,
+                Reminder.lesson_index == lesson_index
+            )
+        )
+        logger.info(f"result: {result}")
+        reminder = result.scalars().all()
         if not reminder:
-            await query.edit_message_text("Напоминание не найдено.")
-            return
+            # todo: создать reminder
+            await update.query.edit_message_text("Напоминание не найдено.")
 
-        # Удаляем текущее напоминание
-        await session.delete(reminder)
-
-        # Добавляем напоминание на следующий урок
         next_index = reminder.lesson_index + 1
         if next_index < len(lessons):
-            new_reminder = Reminder(
-                user_id=reminder.user_id,
-                lesson_index=next_index,
-                remind_at=datetime.now()
-            )
-            session.add(new_reminder)
+            # Добавляем напоминание на следующий урок
+            reminder.lesson_index = next_index
             await session.commit()
-            await query.edit_message_text(
+            await update.query.edit_message_text(
                 f"✅ Урок {reminder.lesson_index + 1} завершён. Следующий добавлен в напоминания.")
         else:
+            # Удаляем текущее напоминание
+            await session.delete(reminder)
             await session.commit()
-            await query.edit_message_text("🎉 Все уроки пройдены!")
+            await update.query.edit_message_text("🎉 Все уроки пройдены!")
 
+async def update_reminder_to_next_time(update, lesson_index, interval_days, context):
+    chat_id = update.effective_chat.id
+    async with async_session() as session:
+        result = await session.execute(
+            select(Reminder)
+            .join(User)
+            .where(
+                User.chat_id == chat_id,
+                Reminder.lesson_index == lesson_index
+            )
+        )
+        logger.info(f"result: {result}")
+        reminder = result.scalars().all()
+        if not reminder:
+            # todo: создать reminder
+            await update.query.edit_message_text("Напоминание не найдено.")
+
+        # меняем дату напоминания
+        reminder.remind_at = reminder.remind_at + timedelta(days=interval_days)
+        await session.commit()
+        lesson = lessons[reminder.lesson_index]
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"📅 Хорошо! Напомню об уроке <a href='{lesson['link']}'>{lesson['title']}</a> в {reminder.remind_at}.",
+            parse_mode=ParseMode.HTML
+        )
 
 async def send_lesson_by_user(user, reminder, context):
     index = reminder.lesson_index
@@ -277,9 +304,11 @@ async def check_reminders(context: CallbackContext):
 
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
-        f'Привет {update.effective_user.first_name}, user.name:{update.effective_user.name}, chat.id:{update.effective_chat.id}, {update.effective_chat.effective_name}!',
+        f'Привет {update.effective_user.first_name}, '
+        f'user.name:{update.effective_user.name}, '
+        f'chat.id:{update.effective_chat.id}, '
+        f'chat.effective_name: {update.effective_chat.effective_name}!',
         reply_markup=main_keyboard)
-
 
 async def show_all_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"📚 Все уроки курса:")
