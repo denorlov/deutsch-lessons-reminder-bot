@@ -196,9 +196,9 @@ async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if query.data == "remind":
         keyboard = InlineKeyboardMarkup([
             [
-                InlineKeyboardButton("Через 12 часов", callback_data="remind_1"),
-                InlineKeyboardButton("1д", callback_data="remind_1"),
-                InlineKeyboardButton("3д", callback_data="remind_3")
+                InlineKeyboardButton("🔁 Через 12 часов", callback_data="remind_1"),
+                InlineKeyboardButton("1 день", callback_data="remind_1"),
+                InlineKeyboardButton("3 дня", callback_data="remind_3")
             ],
             [
                 InlineKeyboardButton("5 дней", callback_data="remind_5"),
