@@ -97,7 +97,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             session.add(reminder)
             await session.commit()
 
-    await hello(update, context)
+    await help(update, context)
     await show_today_lessons(update, context)
 
 
@@ -128,13 +128,13 @@ async def show_today_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_text("📋 Уроки на сегодня:")
         for idx in indices:
             if 0 <= idx < len(lessons):
-                lesson = lessons[idx]
-                await show_lesson(update, lesson)
+                await show_lesson(update, idx)
 
 
-async def show_lesson(update, lesson):
+async def show_lesson(update, lesson_id):
+    lesson = lessons[lesson_id]
     msg = f"<a href='{lesson['link']}'>{lesson['title']}</a>"
-    keyboard = build_keyboard()
+    keyboard = build_keyboard(lesson_id)
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard,
                                     link_preview_options=LinkPreviewOptions(is_disabled=True))
 
@@ -172,10 +172,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Не понимаю. Выбери из меню.")
 
 
-def build_keyboard():
+def build_keyboard(lesson_id):
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔁 Напомнить через...", callback_data="remind")],
-        [InlineKeyboardButton("✅ Прошел, перейти к...", callback_data="next_or_prev")],
+        [InlineKeyboardButton("🔁 Напомнить через...", callback_data=f"remind_1_{lesson_id}")],
+        [InlineKeyboardButton("✅ Прошел, перейти к...", callback_data=f"next_or_prev_{lesson_id}")],
     ])
 
 
@@ -184,38 +184,45 @@ async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await query.answer()
 
-    if query.data == "remind":
+    if query.data.startswith("remind_1"):
+        query_request_data = query.data.split("_")
+        lesson_id = int(query_request_data[-1])
         keyboard = InlineKeyboardMarkup([
             [
-                InlineKeyboardButton("1 день", callback_data="remind_1"),
-                InlineKeyboardButton("2 дня", callback_data="remind_2"),
-                InlineKeyboardButton("3 дня", callback_data="remind_3")
+                InlineKeyboardButton("1 день", callback_data=f"remind_2_1_{lesson_id}"),
+                InlineKeyboardButton("2 дня", callback_data=f"remind_2_2_{lesson_id}"),
+                InlineKeyboardButton("3 дня", callback_data=f"remind_2_3_{lesson_id}")
             ],
             [
-                InlineKeyboardButton("5 дней", callback_data="remind_5"),
-                InlineKeyboardButton("неделю", callback_data="remind_7"),
+                InlineKeyboardButton("5 дней", callback_data=f"remind_2_5_{lesson_id}"),
+                InlineKeyboardButton("неделю", callback_data=f"remind_2_7_{lesson_id}"),
             ],
             [
-                InlineKeyboardButton("2 недели", callback_data="remind_14"),
-                InlineKeyboardButton("месяц", callback_data="remind_30")
+                InlineKeyboardButton("2 недели", callback_data=f"remind_2_14_{lesson_id}"),
+                InlineKeyboardButton("месяц", callback_data=f"remind_2_30_{lesson_id}")
             ]
         ])
         await query.edit_message_reply_markup(reply_markup=keyboard)
 
-    elif query.data.startswith("remind_"):
-        days = int(query.data.split("_")[-1])
-        chat_id = query.message.chat_id
-        await update_reminder_to_next_time(query, chat_id, interval_days=days, context=context)
+    elif query.data.startswith("remind_2"):
+        query_request_data = query.data.split("_")
+        days = int(query_request_data[-2])
+        lesson_id = int(query_request_data[-1])
+        await update_reminder_to_next_time(update, lesson_id, interval_days=days, context=context)
 
-    elif query.data == "next_or_prev":
+    elif query.data.startswith("next_or_prev"):
+        query_request_data = query.data.split("_")
+        lesson_id = int(query_request_data[-1])
         keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("⏭ Готово, к следующему", callback_data="next_lesson")],
-            [InlineKeyboardButton("⏮ Вернуться к предыдущему", callback_data="prev_lesson")],
+            [InlineKeyboardButton("⏭ Готово, к следующему", callback_data=f"next_lesson_{lesson_id}")],
+            [InlineKeyboardButton("⏮ Вернуться к предыдущему", callback_data=f"prev_lesson_{lesson_id}")],
         ])
         await query.edit_message_reply_markup(reply_markup=keyboard)
 
-    elif query.data == "next_lesson":
-        await update_reminder_to_next_lesson(update, lesson_index=1)
+    elif query.data.startswith("next_lesson_"):
+        query_request_data = query.data.split("_")
+        lesson_id = int(query_request_data[-1])
+        await update_reminder_to_next_lesson(update, lesson_index=lesson_id)
 
     # elif query.data == "prev_lesson":
     #     user_data[user_id]["lesson_index"] -= 1
@@ -282,11 +289,11 @@ async def update_reminder_to_next_time(update, lesson_index, interval_days, cont
 
 
 async def send_lesson_by_user(user, reminder, context):
-    index = reminder.lesson_index
-    if 0 <= index < len(lessons):
-        lesson = lessons[index]
+    lesson_id = reminder.lesson_index
+    if 0 <= lesson_id < len(lessons):
+        lesson = lessons[lesson_id]
         msg = f"📘 Пройди урок <a href='{lesson['link']}'>{lesson['title']}</a>"
-        keyboard = build_keyboard()
+        keyboard = build_keyboard(lesson_id)
         await context.bot.send_message(chat_id=user.chat_id, text=msg, reply_markup=keyboard,
                                        link_preview_options=LinkPreviewOptions(is_disabled=True),
                                        parse_mode=ParseMode.HTML)
@@ -303,7 +310,7 @@ async def check_reminders(context: CallbackContext):
             await session.commit()
 
 
-async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         f'Привет {update.effective_user.first_name}, '
         f'user.name:{update.effective_user.name}, '
@@ -316,7 +323,7 @@ async def show_all_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"📚 Все уроки курса:")
     for idx, lesson in enumerate(lessons):
         msg = f"<a href='{lesson['link']}'>{lesson['title']}</a>"
-        keyboard = build_keyboard()
+        keyboard = build_keyboard(idx)
         await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard)
 
 
@@ -326,10 +333,9 @@ async def main():
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("settings", show_schedule))
+    app.add_handler(CommandHandler("help", help))
     app.add_handler(CommandHandler("today", show_today_lessons))
-    app.add_handler(CommandHandler("help", hello))
     app.add_handler(CommandHandler("all", show_all_lessons))
-    app.add_handler(CommandHandler("schedule", show_schedule))
     app.add_handler(CallbackQueryHandler(on_lesson_button))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
