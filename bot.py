@@ -161,10 +161,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Не понимаю. Выбери из меню.")
 
 def build_keyboard():
-    return InlineKeyboardMarkup([
+    return InlineKeyboardMarkup([[
         InlineKeyboardButton("🔁 Напомнить через...", callback_data="remind"),
         InlineKeyboardButton("✅ Прошел, перейти к...", callback_data="next_or_prev"),
-    ])
+    ]])
 
 async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
