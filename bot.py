@@ -196,8 +196,8 @@ async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if query.data == "remind":
         keyboard = InlineKeyboardMarkup([
             [
-                InlineKeyboardButton("Через 12 часов", callback_data="remind_1"),
                 InlineKeyboardButton("1 день", callback_data="remind_1"),
+                InlineKeyboardButton("2 дня", callback_data="remind_2"),
                 InlineKeyboardButton("3 дня", callback_data="remind_3")
             ],
             [
@@ -219,7 +219,7 @@ async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ])
         await query.edit_message_reply_markup(reply_markup=keyboard)
 
-    elif query.data.startswith("remind_in_"):
+    elif query.data.startswith("remind_"):
         days = int(query.data.split("_")[-1])
         chat_id = query.message.chat_id
         await schedule_reminder(query, chat_id, interval_days=days, context=context)
