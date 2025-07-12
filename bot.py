@@ -254,20 +254,20 @@ async def update_reminder_to_next_lesson(update, lesson_id):
         logger.info(f"result: {reminder}")
         if not reminder:
             # todo: создать reminder
-            await update.query.edit_message_text("Напоминание не найдено.")
+            await update.callback_query.edit_message_text("Напоминание не найдено.")
 
         next_index = reminder.lesson_index + 1
         if next_index < len(lessons):
             # Добавляем напоминание на следующий урок
             reminder.lesson_index = next_index
             await session.commit()
-            await update.query.edit_message_text(
+            await update.callback_query.edit_message_text(
                 f"✅ Урок {reminder.lesson_index + 1} завершён. Следующий добавлен в напоминания.")
         else:
             # Удаляем текущее напоминание
             await session.delete(reminder)
             await session.commit()
-            await update.query.edit_message_text("🎉 Все уроки пройдены!")
+            await update.callback_query.edit_message_text("🎉 Все уроки пройдены!")
 
 
 async def update_reminder_to_next_time(update, lesson_id, interval_days, context):
@@ -286,15 +286,16 @@ async def update_reminder_to_next_time(update, lesson_id, interval_days, context
         logger.info(f"result: {reminder}")
         if not reminder:
             # todo: создать reminder
-            await update.query.edit_message_text("Напоминание не найдено.")
+            await update.callback_query.edit_message_text("Напоминание не найдено.")
 
         # меняем дату напоминания
-        reminder.remind_at = reminder.remind_at + timedelta(days=interval_days)
+        now = datetime.now()
+        reminder.remind_at = now + timedelta(days=interval_days)
         await session.commit()
         lesson = lessons[reminder.lesson_index]
         await context.bot.send_message(
             chat_id=chat_id,
-            text=f"📅 Хорошо! Напомню об уроке <a href='{lesson['link']}'>{lesson['title']}</a> в {reminder.remind_at}.",
+            text=f"📅 Хорошо! Напомню об уроке <a href='{lesson['link']}'>{lesson['title']}</a> {reminder.remind_at}.",
             parse_mode=ParseMode.HTML
         )
 
