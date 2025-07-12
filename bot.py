@@ -108,6 +108,7 @@ async def show_today_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE)
         user = result.scalar_one_or_none()
 
         if not user:
+            # todo: создать user и reminder
             await update.message.reply_text("Ты ещё не зарегистрирован. Напиши /start")
             return
 
@@ -146,6 +147,7 @@ async def show_schedule(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = result.scalar_one_or_none()
 
         if not user:
+            # todo: создать user и reminder
             await update.message.reply_text("Ты ещё не зарегистрирован. Напиши /start")
             return
 
@@ -173,6 +175,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def build_keyboard(lesson_id):
+    logger.info(f"build_keyboard(lesson_id={lesson_id})")
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("🔁 Напомнить через...", callback_data=f"remind_1_{lesson_id}")],
         [InlineKeyboardButton("✅ Прошел, перейти к...", callback_data=f"next_or_prev_{lesson_id}")],
@@ -181,12 +184,14 @@ def build_keyboard(lesson_id):
 
 async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
+    logger.info(f"query.data={query.data})")
 
     await query.answer()
 
     if query.data.startswith("remind_1"):
         query_request_data = query.data.split("_")
         lesson_id = int(query_request_data[-1])
+        logger.info(f"lesson_id={lesson_id})")
         keyboard = InlineKeyboardMarkup([
             [
                 InlineKeyboardButton("1 день", callback_data=f"remind_2_1_{lesson_id}"),
@@ -207,12 +212,15 @@ async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data.startswith("remind_2"):
         query_request_data = query.data.split("_")
         days = int(query_request_data[-2])
+        logger.info(f"days={days})")
         lesson_id = int(query_request_data[-1])
+        logger.info(f"lesson_id={lesson_id})")
         await update_reminder_to_next_time(update, lesson_id, interval_days=days, context=context)
 
     elif query.data.startswith("next_or_prev"):
         query_request_data = query.data.split("_")
         lesson_id = int(query_request_data[-1])
+        logger.info(f"lesson_id={lesson_id})")
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("⏭ Готово, к следующему", callback_data=f"next_lesson_{lesson_id}")],
             [InlineKeyboardButton("⏮ Вернуться к предыдущему", callback_data=f"prev_lesson_{lesson_id}")],
@@ -222,14 +230,16 @@ async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data.startswith("next_lesson_"):
         query_request_data = query.data.split("_")
         lesson_id = int(query_request_data[-1])
-        await update_reminder_to_next_lesson(update, lesson_index=lesson_id)
+        logger.info(f"lesson_id={lesson_id})")
+        await update_reminder_to_next_lesson(update, lesson_id=lesson_id)
 
     # elif query.data == "prev_lesson":
     #     user_data[user_id]["lesson_index"] -= 1
     #     await send_lesson(query.message.chat_id, user_id, context)
 
 
-async def update_reminder_to_next_lesson(update, lesson_index):
+async def update_reminder_to_next_lesson(update, lesson_id):
+    logger.info(f"update_reminder_to_next_lesson(lesson_id={lesson_id})")
     chat_id = update.effective_chat.id
     async with async_session() as session:
         result = await session.execute(
@@ -237,7 +247,7 @@ async def update_reminder_to_next_lesson(update, lesson_index):
             .join(User)
             .where(
                 User.chat_id == chat_id,
-                Reminder.lesson_index == lesson_index
+                Reminder.lesson_index == lesson_id
             )
         )
         logger.info(f"result: {result}")
@@ -260,7 +270,8 @@ async def update_reminder_to_next_lesson(update, lesson_index):
             await update.query.edit_message_text("🎉 Все уроки пройдены!")
 
 
-async def update_reminder_to_next_time(update, lesson_index, interval_days, context):
+async def update_reminder_to_next_time(update, lesson_id, interval_days, context):
+    logger.info(f"update_reminder_to_next_lesson(lesson_id={lesson_id})")
     chat_id = update.effective_chat.id
     async with async_session() as session:
         result = await session.execute(
@@ -268,7 +279,7 @@ async def update_reminder_to_next_time(update, lesson_index, interval_days, cont
             .join(User)
             .where(
                 User.chat_id == chat_id,
-                Reminder.lesson_index == lesson_index
+                Reminder.lesson_index == lesson_id
             )
         )
         logger.info(f"result: {result}")
