@@ -250,8 +250,8 @@ async def update_reminder_to_next_lesson(update, lesson_id):
                 Reminder.lesson_index == lesson_id
             )
         )
-        logger.info(f"result: {result}")
-        reminder = result.scalars().all()
+        reminder = result.scalar_one_or_none()
+        logger.info(f"result: {reminder}")
         if not reminder:
             # todo: создать reminder
             await update.query.edit_message_text("Напоминание не найдено.")
@@ -282,8 +282,8 @@ async def update_reminder_to_next_time(update, lesson_id, interval_days, context
                 Reminder.lesson_index == lesson_id
             )
         )
-        logger.info(f"result: {result}")
-        reminder = result.scalars().all()
+        reminder = result.scalar_one_or_none()
+        logger.info(f"result: {reminder}")
         if not reminder:
             # todo: создать reminder
             await update.query.edit_message_text("Напоминание не найдено.")
