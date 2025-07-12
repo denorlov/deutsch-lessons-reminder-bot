@@ -184,14 +184,6 @@ async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await query.answer()
 
-    # if query.data == "next_lesson":
-    #     user_data[user_id]["lesson_index"] += 1
-    #     await send_lesson(query.message.chat_id, user_id, context)
-    #
-    # elif query.data == "prev_lesson":
-    #     user_data[user_id]["lesson_index"] -= 1
-    #     await send_lesson(query.message.chat_id, user_id, context)
-
     if query.data == "remind":
         keyboard = InlineKeyboardMarkup([
             [
@@ -210,6 +202,11 @@ async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ])
         await query.edit_message_reply_markup(reply_markup=keyboard)
 
+    elif query.data.startswith("remind_"):
+        days = int(query.data.split("_")[-1])
+        chat_id = query.message.chat_id
+        await update_reminder_to_next_time(query, chat_id, interval_days=days, context=context)
+
     elif query.data == "next_or_prev":
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("⏭ Готово, к следующему", callback_data="next_lesson")],
@@ -217,13 +214,15 @@ async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ])
         await query.edit_message_reply_markup(reply_markup=keyboard)
 
-    elif query.data.startswith("remind_"):
-        days = int(query.data.split("_")[-1])
-        chat_id = query.message.chat_id
-        await update_reminder_to_next_time(query, chat_id, interval_days=days, context=context)
+    elif query.data == "next_lesson":
+        await update_reminder_to_next_lesson(update, lesson_index=1)
+
+    # elif query.data == "prev_lesson":
+    #     user_data[user_id]["lesson_index"] -= 1
+    #     await send_lesson(query.message.chat_id, user_id, context)
 
 
-async def update_reminder_to_next_lesson(update, lesson_index, context):
+async def update_reminder_to_next_lesson(update, lesson_index):
     chat_id = update.effective_chat.id
     async with async_session() as session:
         result = await session.execute(
@@ -253,6 +252,7 @@ async def update_reminder_to_next_lesson(update, lesson_index, context):
             await session.commit()
             await update.query.edit_message_text("🎉 Все уроки пройдены!")
 
+
 async def update_reminder_to_next_time(update, lesson_index, interval_days, context):
     chat_id = update.effective_chat.id
     async with async_session() as session:
@@ -279,6 +279,7 @@ async def update_reminder_to_next_time(update, lesson_index, interval_days, cont
             text=f"📅 Хорошо! Напомню об уроке <a href='{lesson['link']}'>{lesson['title']}</a> в {reminder.remind_at}.",
             parse_mode=ParseMode.HTML
         )
+
 
 async def send_lesson_by_user(user, reminder, context):
     index = reminder.lesson_index
@@ -309,6 +310,7 @@ async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         f'chat.id:{update.effective_chat.id}, '
         f'chat.effective_name: {update.effective_chat.effective_name}!',
         reply_markup=main_keyboard)
+
 
 async def show_all_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"📚 Все уроки курса:")
