@@ -176,7 +176,7 @@ def build_keyboard():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("🔁 Напомнить через...", callback_data="remind")],
         [InlineKeyboardButton("✅ Прошел, перейти к...", callback_data="next_or_prev")],
-    ])
+    ], resize_keyboard=True)
 
 
 async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -213,9 +213,9 @@ async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif query.data == "next_or_prev":
         keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("⏮ Вернуться к предыдущем", callback_data="prev_lesson")],
-            [InlineKeyboardButton("⏸ Больше не напоминать", callback_data="complete_lesson")],
-            [InlineKeyboardButton("✅ Перейти к следующему", callback_data="next_lesson")]
+            [InlineKeyboardButton("✅ Перейти к следующему", callback_data="next_lesson")],
+            [InlineKeyboardButton("⏮ Вернуться к предыдущему", callback_data="prev_lesson")],
+            [InlineKeyboardButton("⏸ Больше не напоминать", callback_data="complete_lesson")]
         ])
         await query.edit_message_reply_markup(reply_markup=keyboard)
 
