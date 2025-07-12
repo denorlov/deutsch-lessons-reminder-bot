@@ -142,7 +142,7 @@ async def show_today_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE)
         logger.info(f"indices: {indices}")
 
         if not indices:
-            await update.message.reply_text("На сегодня нет уроков для напоминания.")
+            await update.message.reply_text("На сегодня уроков больше нет.")
             return
 
         await update.message.reply_text("📋 Уроки на сегодня:")
