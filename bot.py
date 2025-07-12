@@ -4,9 +4,11 @@ import os
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup, LinkPreviewOptions
+from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup, \
+    LinkPreviewOptions
 from telegram.constants import ParseMode
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackContext, ContextTypes, MessageHandler, filters, CallbackQueryHandler
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackContext, ContextTypes, MessageHandler, filters, \
+    CallbackQueryHandler
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
@@ -31,9 +33,9 @@ Base = declarative_base()
 scheduler = AsyncIOScheduler()
 
 lessons = [
-    {"title" : "Lektion 1. Личные местоимения", "link": "https://t.me/c/2054418094/48?thread=43"},
-    {"title" : "Lektion 2. Тренировка личных местоимений", "link": "https://t.me/c/2054418094/56?thread=52"},
-    {"title" : "Lektion 3. Глагол sein (быть)", "link": "https://t.me/c/2054418094/64?thread=58"}
+    {"title": "Lektion 1. Личные местоимения", "link": "https://t.me/c/2054418094/48?thread=43"},
+    {"title": "Lektion 2. Тренировка личных местоимений", "link": "https://t.me/c/2054418094/56?thread=52"},
+    {"title": "Lektion 3. Глагол sein (быть)", "link": "https://t.me/c/2054418094/64?thread=58"}
 ]
 
 main_keyboard = ReplyKeyboardMarkup([
@@ -41,11 +43,13 @@ main_keyboard = ReplyKeyboardMarkup([
     [KeyboardButton("⚙️ Настроить расписание")]
 ], resize_keyboard=True)
 
+
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
     chat_id = Column(Integer, unique=True)
     schedule = Column(String, default='everyday 08:00')
+
 
 class Reminder(Base):
     __tablename__ = 'reminders'
@@ -53,6 +57,7 @@ class Reminder(Base):
     user_id = Column(Integer, ForeignKey('users.id'))
     lesson_index = Column(Integer)
     remind_at = Column(DateTime)
+
 
 def schedule_checker(application):
     # job_id = f"reminder_{user_id}"
@@ -71,9 +76,11 @@ def schedule_checker(application):
     scheduler.add_job(check_reminders, "interval", days=1, args=[application])
     scheduler.start()
 
+
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -93,7 +100,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await hello(update, context)
     await show_today_lessons(update, context)
 
-async def show_today_lessons(update: Update, context : ContextTypes.DEFAULT_TYPE):
+
+async def show_today_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     async with async_session() as session:
         result = await session.execute(select(User).where(User.chat_id == chat_id))
@@ -123,6 +131,7 @@ async def show_today_lessons(update: Update, context : ContextTypes.DEFAULT_TYPE
                 lesson = lessons[idx]
                 await show_lesson(update, lesson)
 
+
 async def show_lesson(update, lesson):
     msg = f"<a href='{lesson['link']}'>{lesson['title']}</a>"
     keyboard = build_keyboard()
@@ -141,15 +150,17 @@ async def show_schedule(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         await update.message.reply_text("Пока редактирование не доступно")
-        await update.message.reply_text(f"Текущее расписание: для user.id={user.id}, chat_id:{user.chat_id}, schedule: {user.schedule}")
+        await update.message.reply_text(
+            f"Текущее расписание: для user.id={user.id}, chat_id:{user.chat_id}, schedule: {user.schedule}")
         for job in scheduler.get_jobs():
-            await update.message.reply_text(f"{job.id}, {job.name}, trigger:{job.trigger}, next run time:{job.next_run_time}")
+            await update.message.reply_text(
+                f"{job.id}, {job.name}, trigger:{job.trigger}, next run time:{job.next_run_time}")
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"update:{update}, context: {context}")
 
-    text:String = update.message.text.lower()
+    text: String = update.message.text.lower()
 
     if "уроки" in text and "сегодня" in text:
         await show_today_lessons(update, context)
@@ -160,11 +171,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("Не понимаю. Выбери из меню.")
 
+
 def build_keyboard():
-    return InlineKeyboardMarkup([[
-        InlineKeyboardButton("🔁 Напомнить через...", callback_data="remind"),
-        InlineKeyboardButton("✅ Прошел, перейти к...", callback_data="next_or_prev"),
-    ]])
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("🔁 Напомнить через...", callback_data="remind")],
+        [InlineKeyboardButton("✅✅ Прошел, перейти к...", callback_data="next_or_prev")],
+    ])
+
 
 async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -202,27 +215,44 @@ async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard = InlineKeyboardMarkup([[
             InlineKeyboardButton("⏮ Вернуться к предыдущем", callback_data="prev_lesson"),
             InlineKeyboardButton("⏸ Больше не напоминать", callback_data="complete_lesson"),
-            InlineKeyboardButton("⏭ Перейти к следующему", callback_data="next_lesson")
+            InlineKeyboardButton("✅ Перейти к следующему", callback_data="next_lesson")
         ]])
         await query.edit_message_reply_markup(reply_markup=keyboard)
 
-    # elif query.data.startswith("remind_in_"):
-    #     days = int(query.data.split("_")[-1])
-    #     schedule_reminder(user_id, query.message.chat_id, interval_days=days, context=context)
-    #     await context.bot.send_message(chat_id=query.message.chat_id, text=f"📅 Хорошо! Напомню через {days} дней.")
-#
-# def schedule_reminder(user_id, chat_id, interval_days, context, hour=8, minute=0):
-#     job_id = f"reminder_{user_id}"
-#     scheduler.remove_job(job_id=job_id, jobstore=None) if scheduler.get_job(job_id) else None
-#     scheduler.add_job(
-#         send_lesson,
-#         'interval',
-#         days=interval_days,
-#         start_date=datetime.now().replace(hour=hour, minute=minute, second=0) + timedelta(days=0),
-#         args=[chat_id, user_id, context],
-#         id=job_id,
-#         replace_existing=True
-#     )
+    elif query.data.startswith("remind_in_"):
+        days = int(query.data.split("_")[-1])
+        chat_id = query.message.chat_id
+        await schedule_reminder(query, chat_id, interval_days=days, context=context)
+        await context.bot.send_message(chat_id=chat_id, text=f"📅 Хорошо! Напомню через {days} дней.")
+
+
+async def schedule_reminder(query, chat_id, interval_days, context):
+    reminder_id = 0
+    async with async_session() as session:
+        reminder = await session.get(Reminder, reminder_id)
+        if not reminder:
+            await query.edit_message_text("Напоминание не найдено.")
+            return
+
+        # Удаляем текущее напоминание
+        await session.delete(reminder)
+
+        # Добавляем напоминание на следующий урок
+        next_index = reminder.lesson_index + 1
+        if next_index < len(lessons):
+            new_reminder = Reminder(
+                user_id=reminder.user_id,
+                lesson_index=next_index,
+                remind_at=datetime.now()
+            )
+            session.add(new_reminder)
+            await session.commit()
+            await query.edit_message_text(
+                f"✅ Урок {reminder.lesson_index + 1} завершён. Следующий добавлен в напоминания.")
+        else:
+            await session.commit()
+            await query.edit_message_text("🎉 Все уроки пройдены!")
+
 
 async def send_lesson_by_user(user, reminder, context):
     index = reminder.lesson_index
@@ -230,7 +260,10 @@ async def send_lesson_by_user(user, reminder, context):
         lesson = lessons[index]
         msg = f"📘 Пройди урок <a href='{lesson['link']}'>{lesson['title']}</a>"
         keyboard = build_keyboard()
-        await context.bot.send_message(chat_id=user.chat_id, text=msg, reply_markup=keyboard, link_preview_options=LinkPreviewOptions(is_disabled=True), parse_mode=ParseMode.HTML)
+        await context.bot.send_message(chat_id=user.chat_id, text=msg, reply_markup=keyboard,
+                                       link_preview_options=LinkPreviewOptions(is_disabled=True),
+                                       parse_mode=ParseMode.HTML)
+
 
 async def check_reminders(context: CallbackContext):
     now = datetime.now()
@@ -242,8 +275,12 @@ async def check_reminders(context: CallbackContext):
             await send_lesson_by_user(user, reminder, context)
             await session.commit()
 
+
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text(f'Привет {update.effective_user.first_name}, user.name:{update.effective_user.name}, chat.id:{update.effective_chat.id}, {update.effective_chat.effective_name}!', reply_markup=main_keyboard)
+    await update.message.reply_text(
+        f'Привет {update.effective_user.first_name}, user.name:{update.effective_user.name}, chat.id:{update.effective_chat.id}, {update.effective_chat.effective_name}!',
+        reply_markup=main_keyboard)
+
 
 async def show_all_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"📚 Все уроки курса:")
@@ -251,6 +288,7 @@ async def show_all_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         msg = f"<a href='{lesson['link']}'>{lesson['title']}</a>"
         keyboard = build_keyboard()
         await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard)
+
 
 async def main():
     await init_db()
@@ -274,6 +312,7 @@ async def main():
 
     while True:
         await asyncio.sleep(3600)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
