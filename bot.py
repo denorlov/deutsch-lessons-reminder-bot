@@ -239,6 +239,12 @@ async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"lesson_id={lesson_id})")
         await update_reminder_to_next_lesson(update, lesson_id=lesson_id, context=context)
 
+    elif query.data.startswith("new_reminder_today"):
+        query_request_data = query.data.split("_")
+        lesson_id = int(query_request_data[-1])
+        logger.info(f"lesson_id={lesson_id})")
+        await set_reminder_for_today(update, lesson_id, context)
+
 
 async def update_reminder_to_next_lesson(update, lesson_id, context):
     logger.info(f"update_reminder_to_next_lesson(lesson_id={lesson_id})")
@@ -284,6 +290,11 @@ months_ru = [
 
 def format_date(datetime):
     return f"{datetime.day} {months_ru[datetime.month - 1]} {datetime.year}"
+
+async def set_reminder_for_today(update, lesson_id, context):
+    logger.info(f"set_reminder_for_today(lesson_id={lesson_id})")
+    #todo: implement
+    pass
 
 async def update_reminder_to_next_time(update, lesson_id, interval_days, context):
     logger.info(f"update_reminder_to_next_lesson(lesson_id={lesson_id})")
@@ -337,10 +348,9 @@ async def check_reminders(context: CallbackContext):
             await session.commit()
 
 
-async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def diag(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
-        f'Привет {update.effective_user.first_name}, '
-        f'user.name:{update.effective_user.name}, '
+        f'Привет, {update.effective_user.name}! '
         f'chat.id:{update.effective_chat.id}, '
         f'chat.effective_name: {update.effective_chat.effective_name}!',
         reply_markup=main_keyboard)
@@ -383,11 +393,17 @@ async def show_planned_lessons(update: Update, context: ContextTypes.DEFAULT_TYP
         for reminder in reminders:
             if 0 <= reminder.lesson_index < len(lessons):
                 lesson = lessons[reminder.lesson_index]
-                #todo: отображать как Урок XXX запланирован на DDD
-                msg = f"<a href='{lesson['link']}'>{lesson['title']}</a>"
-                #todo: должен быть только пункт 1) Перенести на сегодня
-                keyboard = build_keyboard(reminder.lesson_index)
+                msg = f"<a href='{lesson['link']}'>{lesson['title']}</a> запланирован на {format_date(reminder.remind_at)}"
+                keyboard = build_all_lessons_keyboard(reminder.lesson_index)
                 await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard)
+
+def build_all_lessons_keyboard(lesson_id):
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("Перенести на сегодня", callback_data=f"new_reminder_today_lesson_{lesson_id}"),
+        ],
+    ])
+
 
 async def main():
     await init_db()
@@ -395,15 +411,18 @@ async def main():
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("settings", show_schedule))
-    app.add_handler(CommandHandler("help", help))
-    app.add_handler(CommandHandler("today", show_today_lessons))
+    app.add_handler(CommandHandler("help", diag))
+
     app.add_handler(CommandHandler("all", show_all_lessons))
+    app.add_handler(CommandHandler("today", show_today_lessons))
     app.add_handler(CommandHandler("planned", show_planned_lessons))
+
     app.add_handler(CallbackQueryHandler(on_lesson_button))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     schedule_checker(app)
 
+    # todo: remove main app menu
     await app.initialize()
     await app.start()
 
