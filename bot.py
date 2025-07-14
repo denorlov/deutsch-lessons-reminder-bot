@@ -419,7 +419,7 @@ async def show_planned_lessons(update: Update, context: ContextTypes.DEFAULT_TYP
         for reminder in reminders:
             if 0 <= reminder.lesson_index < len(lessons):
                 lesson = lessons[reminder.lesson_index]
-                msg = f"<a href='{lesson['link']}'>{lesson['title']}</a> запланирован на {format_date(reminder.remind_at)}"
+                msg = f"{format_date(reminder.remind_at)} <a href='{lesson['link']}'>{lesson['title']}</a>"
                 keyboard = build_lesson_to_today_keyboard(reminder.lesson_index)
                 await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard)
 
