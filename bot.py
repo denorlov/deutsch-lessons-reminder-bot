@@ -297,6 +297,13 @@ async def update_reminder_to_next_lesson(update, lesson_id, context):
             await session.commit()
             await update.callback_query.edit_message_text("🎉 Все уроки пройдены!")
 
+months_ru = [
+    "января", "февраля", "марта", "апреля", "мая", "июня",
+    "июля", "августа", "сентября", "октября", "ноября", "декабря"
+]
+
+def format_date(datetime):
+    return f"{datetime.day} {months_ru[datetime.month - 1]} {datetime.year}"
 
 async def update_reminder_to_next_time(update, lesson_id, interval_days, context):
     logger.info(f"update_reminder_to_next_lesson(lesson_id={lesson_id})")
@@ -323,8 +330,7 @@ async def update_reminder_to_next_time(update, lesson_id, interval_days, context
         lesson = lessons[reminder.lesson_index]
         await context.bot.send_message(
             chat_id=chat_id,
-            # todo: отображать только дату
-            text=f"📅 Хорошо! Напомню об уроке <a href='{lesson['link']}'>{lesson['title']}</a> {reminder.remind_at}.",
+            text=f"📅 Хорошо! Напомню об уроке <a href='{lesson['link']}'>{lesson['title']}</a> {format_date(reminder.remind_at)}.",
             parse_mode=ParseMode.HTML
         )
 
