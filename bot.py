@@ -124,9 +124,7 @@ async def show_today_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE)
         user = result.scalar_one_or_none()
 
         if not user:
-            # todo: создать user и reminder
-            await update.message.reply_text("Ты ещё не зарегистрирован. Напиши /start")
-            return
+            await start(update, context)
 
         result = await session.execute(
             select(Reminder.lesson_index).where(
@@ -138,15 +136,14 @@ async def show_today_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE)
         indices = sorted(set(row[0] for row in result.fetchall()))
         logger.info(f"indices: {indices}")
 
-        if not indices:
-            # todo: отображать запланированные уроки, см sh show_planned_lessons()
+        if indices:
+            await update.message.reply_text("📋 Уроки на сегодня:")
+            for idx in indices:
+                if 0 <= idx < len(lessons):
+                    await show_lesson(update, idx)
+        else:
             await update.message.reply_text("На сегодня уроков нет.")
-            return
-
-        await update.message.reply_text("📋 Уроки на сегодня:")
-        for idx in indices:
-            if 0 <= idx < len(lessons):
-                await show_lesson(update, idx)
+            show_planned_lessons(update, context)
 
 
 async def show_lesson(update, lesson_id):
@@ -159,15 +156,7 @@ async def show_lesson(update, lesson_id):
 
 async def show_schedule(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
-    async with async_session() as session:
-        result = await session.execute(select(User).where(User.chat_id == chat_id))
-        user = result.scalar_one_or_none()
-
-        if not user:
-            await start(update, context)
-
-        await update.message.reply_text("Пока редактирование не доступно")
-
+    await update.message.reply_text("Пока редактирование не доступно")
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"update:{update}, context: {context}")
@@ -365,8 +354,9 @@ async def diag(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     async with async_session() as session:
         result = await session.execute(select(User).where(User.chat_id == chat_id))
         user = result.scalar_one_or_none()
-        await update.message.reply_text(
-            f"Расписание: user.id={user.id}, chat_id:{user.chat_id}, schedule: {user.schedule}")
+        if not user:
+            await start(update, context)
+        await update.message.reply_text(f"Расписание: user.id={user.id}, chat_id:{user.chat_id}, schedule: {user.schedule}")
 
     for job in scheduler.get_jobs():
         await update.message.reply_text(
@@ -375,10 +365,10 @@ async def diag(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def show_all_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"📚 Все уроки курса:")
-    for idx, lesson in enumerate(lessons):
+    for lesson_id, lesson in enumerate(lessons):
         msg = f"<a href='{lesson['link']}'>{lesson['title']}</a>"
         # todo: добавить кнопку "перейти к прохождению этого урока"
-        keyboard = build_lesson_to_today_keyboard
+        keyboard = build_lesson_to_today_keyboard(lesson_id)
         await update.message.reply_text(msg, parse_mode=ParseMode.HTML, keyboard=keyboard)
 
 
