@@ -253,17 +253,17 @@ async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         query_request_data = query.data.split("_")
         lesson_id = int(query_request_data[-1])
         logger.info(f"lesson_id={lesson_id})")
-        await update_reminder_to_next_lesson(update, lesson_id=lesson_id)
+        await update_reminder_to_next_lesson(update, lesson_id=lesson_id, context=context)
 
     # elif query.data == "prev_lesson":
     #     user_data[user_id]["lesson_index"] -= 1
     #     await send_lesson(query.message.chat_id, user_id, context)
 
 
-async def update_reminder_to_next_lesson(update, lesson_id):
+async def update_reminder_to_next_lesson(update, lesson_id, context):
     logger.info(f"update_reminder_to_next_lesson(lesson_id={lesson_id})")
     chat_id = update.effective_chat.id
-    async with async_session() as session:
+    async with (async_session() as session):
         result = await session.execute(
             select(Reminder)
             .join(User)
@@ -284,8 +284,13 @@ async def update_reminder_to_next_lesson(update, lesson_id):
             reminder.lesson_index = next_index
             reminder.remind_at = datetime.combine(datetime.today().date(), time.min)
             await session.commit()
-            await update.callback_query.edit_message_text(
-                f"✅ Урок {reminder.lesson_index + 1} завершён. Следующий добавлен в напоминания.")
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=f"✅ Урок {reminder.lesson_index + 1} завершён. Следующий добавлен в напоминания.",
+                parse_mode=ParseMode.HTML
+            )
+            await show_today_lessons(update, context)
+
         else:
             # Удаляем текущее напоминание
             await session.delete(reminder)
@@ -325,9 +330,10 @@ async def update_reminder_to_next_time(update, lesson_id, interval_days, context
 
 async def send_lesson_by_user(user, reminder, context):
     lesson_id = reminder.lesson_index
+    msg = f"📘 Пройди урок(и):<br/>"
     if 0 <= lesson_id < len(lessons):
         lesson = lessons[lesson_id]
-        msg = f"📘 Пройди урок <a href='{lesson['link']}'>{lesson['title']}</a>"
+        msg += f"<a href='{lesson['link']}'>{lesson['title']}</a><br/>"
         keyboard = build_keyboard(lesson_id)
         await context.bot.send_message(chat_id=user.chat_id, text=msg, reply_markup=keyboard,
                                        link_preview_options=LinkPreviewOptions(is_disabled=True),
