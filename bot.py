@@ -37,16 +37,16 @@ lessons = [
     {"title": "Lektion 2. Тренировка личных местоимений", "link": "https://t.me/c/2054418094/56?thread=52"},
     {"title": "Lektion 3. Глагол sein (быть)", "link": "https://t.me/c/2054418094/64?thread=58"},
     {"title": "Lektion 4. Тренировка sein. Лексика: прилагательные", "link": "https://t.me/c/2054418094/129?thread=65"},
-    {"title": "Lektion 5. Правила чтения: sch, вокализованный r, w, немой h",
-     "link": "https://t.me/c/2054418094/71?thread=69"},
-    {"title": "Lektion 6. Тренировка sein, рода существительных, лексика",
-     "link": "https://t.me/c/2054418094/75?thread=72"},
+    {"title": "Lektion 5. Правила чтения: sch, вокализованный r, w, немой h", "link": "https://t.me/c/2054418094/71?thread=69"},
+    {"title": "Lektion 6. Тренировка sein, рода существительных, лексика", "link": "https://t.me/c/2054418094/75?thread=72"},
     {"title": "Lektion 7. Rr", "link": "https://t.me/c/2054418094/83?thread=77"},
     {"title": "Lektion 8. Teil 1. Das Auto ist neu: лексика", "link": "https://t.me/c/2054418094/93?thread=78"},
     {"title": "Lektion 8. Teil 2", "link": "https://t.me/c/2054418094/94?thread=79"},
     {"title": "Lektion 9. Правила чтения: ei, ch, ck", "link": "https://t.me/c/2054418094/95?thread=84"},
     {"title": "Lektion 10. Определенный и неопределенный артикли", "link": "https://t.me/c/2054418094/96?thread=85"}
 ]
+
+# TODO: почему-то появляются дублирующиеся reminderы (с одним и тем же user_id и lesson_id)
 
 main_keyboard = ReplyKeyboardMarkup([
     [KeyboardButton("📋 Уроки на сегодня")],
