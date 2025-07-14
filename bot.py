@@ -142,7 +142,7 @@ async def show_today_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE)
         logger.info(f"indices: {indices}")
 
         if not indices:
-            await update.message.reply_text("На сегодня уроков больше нет.")
+            await update.message.reply_text("На сегодня уроков нет.")
             return
 
         await update.message.reply_text("📋 Уроки на сегодня:")
@@ -284,9 +284,9 @@ async def update_reminder_to_next_lesson(update, lesson_id, context):
             reminder.lesson_index = next_index
             reminder.remind_at = datetime.combine(datetime.today().date(), time.min)
             await session.commit()
-            await context.bot.send_message(
+            await update.reply_text(
                 chat_id=chat_id,
-                text=f"✅ Урок {reminder.lesson_index + 1} завершён. Следующий добавлен в напоминания.",
+                text=f"✅ Урок {reminder.lesson_index} завершён. Следующий добавлен в напоминания.",
                 parse_mode=ParseMode.HTML
             )
             await show_today_lessons(update, context)
