@@ -264,7 +264,7 @@ async def update_reminder_to_next_lesson(update, lesson_id, context):
             reminder.lesson_index = next_index
             reminder.remind_at = datetime.combine(datetime.today().date(), time.min)
             await session.commit()
-            await update.reply_text(
+            await update.message.reply_text(
                 chat_id=chat_id,
                 text=f"✅ Урок {reminder.lesson_index} завершён. Следующий добавлен в напоминания.",
                 parse_mode=ParseMode.HTML
@@ -275,7 +275,7 @@ async def update_reminder_to_next_lesson(update, lesson_id, context):
             # Удаляем текущее напоминание
             await session.delete(reminder)
             await session.commit()
-            await update.callback_query.edit_message_text("🎉 Все уроки пройдены!")
+            await update.message.reply_text("🎉 Все уроки пройдены!")
 
 months_ru = [
     "января", "февраля", "марта", "апреля", "мая", "июня",
@@ -301,14 +301,14 @@ async def update_reminder_to_next_time(update, lesson_id, interval_days, context
         logger.info(f"result: {reminder}")
         if not reminder:
             # todo: создать reminder
-            await update.callback_query.edit_message_text("Напоминание не найдено.")
+            await update.message.reply_text("Напоминание не найдено.")
 
         # меняем дату напоминания
         now = datetime.combine(datetime.today().date(), time.min)
         reminder.remind_at = now + timedelta(days=interval_days)
         await session.commit()
         lesson = lessons[reminder.lesson_index]
-        await context.bot.send_message(
+        await update.message.reply_text(
             chat_id=chat_id,
             text=f"📅 Хорошо! Напомню об уроке <a href='{lesson['link']}'>{lesson['title']}</a> {format_date(reminder.remind_at)}.",
             parse_mode=ParseMode.HTML
