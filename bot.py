@@ -109,7 +109,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             session.add(reminder)
             await session.commit()
 
-    await help(update, context)
     await show_today_lessons(update, context)
 
 
@@ -415,7 +414,10 @@ async def main():
 
     app.add_handler(CommandHandler("all", show_all_lessons))
     app.add_handler(CommandHandler("today", show_today_lessons))
+
     app.add_handler(CommandHandler("planned", show_planned_lessons))
+    app.add_handler(CommandHandler("reminders", show_planned_lessons))
+    app.add_handler(CommandHandler("future", show_planned_lessons))
 
     app.add_handler(CallbackQueryHandler(on_lesson_button))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
