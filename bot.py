@@ -144,6 +144,7 @@ async def show_today_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE)
         logger.info(f"indices: {indices}")
 
         if not indices:
+            # todo: отображать запланированные уроки, см sh show_planned_lessons()
             await update.message.reply_text("На сегодня уроков нет.")
             return
 
@@ -358,8 +359,8 @@ async def show_all_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"📚 Все уроки курса:")
     for idx, lesson in enumerate(lessons):
         msg = f"<a href='{lesson['link']}'>{lesson['title']}</a>"
-        keyboard = build_keyboard(idx)
-        await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard)
+        # todo: добавить кнопку "перейти к прохождению этого урока"
+        await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
 
 async def show_planned_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -390,7 +391,9 @@ async def show_planned_lessons(update: Update, context: ContextTypes.DEFAULT_TYP
         for reminder in reminders:
             if 0 <= reminder.lesson_index < len(lessons):
                 lesson = lessons[reminder.lesson_index]
+                #todo: отображать как Урок XXX запланирован на DDD
                 msg = f"<a href='{lesson['link']}'>{lesson['title']}</a>"
+                #todo: должен быть только пункт 1) Перенести на сегодня
                 keyboard = build_keyboard(reminder.lesson_index)
                 await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard)
 
