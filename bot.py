@@ -263,7 +263,7 @@ async def update_reminder_to_next_lesson(update, lesson_id, context):
             await session.commit()
             await context.bot.send_message(
                 chat_id=chat_id,
-                text=f"✅ Урок {reminder.lesson_index} завершён. Следующий добавлен в напоминания.",
+                text=f"✅ Урок {format_lesson(reminder.lesson_index)} завершён. Следующий добавлен в напоминания.",
                 parse_mode=ParseMode.HTML
             )
             await show_today_lessons(update, context)
@@ -274,6 +274,9 @@ async def update_reminder_to_next_lesson(update, lesson_id, context):
             await session.commit()
             await context.bot.send_message(chat_id=chat_id, text="🎉 Все уроки пройдены!")
 
+def format_lesson(lesson_id):
+    lesson = lessons[lesson_id]
+    return f"<a href='{lesson['link']}'>{lesson['title']}</a>"
 
 months_ru = [
     "января", "февраля", "марта", "апреля", "мая", "июня",
@@ -333,21 +336,17 @@ async def update_reminder_to_next_time(update, lesson_id, interval_days, context
         lesson = lessons[reminder.lesson_index]
         await context.bot.send_message(
             chat_id=chat_id,
-            text=f"📅 Хорошо! {format_date(reminder.remind_at)} напомню про <a href='{lesson['link']}'>{lesson['title']}</a>.",
+            text=f"📅 Хорошо! {format_date(reminder.remind_at)} напомню про {format_lesson(reminder.lesson_index)}</a>.",
             parse_mode=ParseMode.HTML
         )
 
 
 async def send_lesson_by_user(user, reminder, context):
     lesson_id = reminder.lesson_index
-    msg = f"📘 Пройди урок(и):<br/>"
-    if 0 <= lesson_id < len(lessons):
-        lesson = lessons[lesson_id]
-        msg += f"<a href='{lesson['link']}'>{lesson['title']}</a><br/>"
-        keyboard = build_keyboard(lesson_id)
-        await context.bot.send_message(chat_id=user.chat_id, text=msg, reply_markup=keyboard,
-                                       link_preview_options=LinkPreviewOptions(is_disabled=True),
-                                       parse_mode=ParseMode.HTML)
+    keyboard = build_keyboard(lesson_id)
+    await context.bot.send_message(chat_id=user.chat_id, text=format_lesson(lesson_id), reply_markup=keyboard,
+                                   link_preview_options=LinkPreviewOptions(is_disabled=True),
+                                   parse_mode=ParseMode.HTML)
 
 
 async def check_reminders(context: CallbackContext):
@@ -357,6 +356,8 @@ async def check_reminders(context: CallbackContext):
         reminders = result.scalars().all()
         for reminder in reminders:
             user = await session.get(User, reminder.user_id)
+            # todo: сгруппировать по пользователю, каждому пользователю отправлять только одно сообщение Пройди урок(и)
+            await context.bot.send_message(chat_id=user.chat_id, text=f"📘 Пройди урок(и):<br/>", parse_mode=ParseMode.HTML)
             await send_lesson_by_user(user, reminder, context)
             await session.commit()
 
