@@ -336,7 +336,7 @@ async def update_reminder_to_next_time(update, lesson_id, interval_days, context
         lesson = lessons[reminder.lesson_index]
         await context.bot.send_message(
             chat_id=chat_id,
-            text=f"📅 Хорошо! {format_date(reminder.remind_at)} напомню про {format_lesson(reminder.lesson_index)}</a>.",
+            text=f"📅 Хорошо! {format_date(reminder.remind_at)} напомню про {format_lesson(reminder.lesson_index)}.",
             parse_mode=ParseMode.HTML
         )
 
