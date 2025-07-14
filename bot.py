@@ -37,8 +37,10 @@ lessons = [
     {"title": "Lektion 2. Тренировка личных местоимений", "link": "https://t.me/c/2054418094/56?thread=52"},
     {"title": "Lektion 3. Глагол sein (быть)", "link": "https://t.me/c/2054418094/64?thread=58"},
     {"title": "Lektion 4. Тренировка sein. Лексика: прилагательные", "link": "https://t.me/c/2054418094/129?thread=65"},
-    {"title": "Lektion 5. Правила чтения: sch, вокализованный r, w, немой h", "link": "https://t.me/c/2054418094/71?thread=69"},
-    {"title": "Lektion 6. Тренировка sein, рода существительных, лексика", "link": "https://t.me/c/2054418094/75?thread=72"},
+    {"title": "Lektion 5. Правила чтения: sch, вокализованный r, w, немой h",
+     "link": "https://t.me/c/2054418094/71?thread=69"},
+    {"title": "Lektion 6. Тренировка sein, рода существительных, лексика",
+     "link": "https://t.me/c/2054418094/75?thread=72"},
     {"title": "Lektion 7. Rr", "link": "https://t.me/c/2054418094/83?thread=77"},
     {"title": "Lektion 8. Teil 1. Das Auto ist neu: лексика", "link": "https://t.me/c/2054418094/93?thread=78"},
     {"title": "Lektion 8. Teil 2", "link": "https://t.me/c/2054418094/94?thread=79"},
@@ -53,6 +55,7 @@ main_keyboard = ReplyKeyboardMarkup([
     # todo: показать уроки которые нужно будет пройти (c возможностью поменять дату напоминания и добавить к сегодняшнему списку уроков, если это лекция а не практикум, то все последущие лекции удаляются, а остается только выбранная с напоминанеим = текущей дате)
     # todo: показать пройденные уроки (с возможностью поставить напоминалку на через x дней или перейти к этому уроку, тогда все запланирвоанные или проходимые уроки удаляются, остается только выбранный)
 ], resize_keyboard=True)
+
 
 # todo: внедрить лексические трениниги
 
@@ -72,6 +75,7 @@ class Reminder(Base):
 
 
 def schedule_checker(application):
+    # todo:
     # job_id = f"reminder_{user_id}"
     # scheduler.remove_job(job_id=job_id, jobstore=None) if scheduler.get_job(job_id) else None
     # scheduler.add_job(
@@ -95,6 +99,7 @@ async def init_db():
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # todo: если нет ни одного запланированного урока, добавить в reminder первый урок
     chat_id = update.effective_chat.id
     async with async_session() as session:
         result = await session.execute(select(User).where(User.chat_id == chat_id))
@@ -159,16 +164,9 @@ async def show_schedule(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = result.scalar_one_or_none()
 
         if not user:
-            # todo: создать user и reminder
-            await update.message.reply_text("Ты ещё не зарегистрирован. Напиши /start")
-            return
+            await start(update, context)
 
         await update.message.reply_text("Пока редактирование не доступно")
-        await update.message.reply_text(
-            f"Текущее расписание: user.id={user.id}, chat_id:{user.chat_id}, schedule: {user.schedule}")
-        for job in scheduler.get_jobs():
-            await update.message.reply_text(
-                f"job id:{job.id}, name:{job.name}, trigger:{job.trigger}, next run time:{job.next_run_time}")
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -282,18 +280,26 @@ async def update_reminder_to_next_lesson(update, lesson_id, context):
             await session.commit()
             await context.bot.send_message(chat_id=chat_id, text="🎉 Все уроки пройдены!")
 
+
 months_ru = [
     "января", "февраля", "марта", "апреля", "мая", "июня",
     "июля", "августа", "сентября", "октября", "ноября", "декабря"
 ]
 
+
 def format_date(datetime):
     return f"{datetime.day} {months_ru[datetime.month - 1]} {datetime.year}"
+
 
 async def set_reminder_for_today(update, lesson_id, context):
     logger.info(f"set_reminder_for_today(lesson_id={lesson_id})")
     #todo: implement
-    pass
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=f"Пока не реализовано.",
+        parse_mode=ParseMode.HTML
+    )
+
 
 async def update_reminder_to_next_time(update, lesson_id, interval_days, context):
     logger.info(f"update_reminder_to_next_lesson(lesson_id={lesson_id})")
@@ -324,6 +330,7 @@ async def update_reminder_to_next_time(update, lesson_id, interval_days, context
             parse_mode=ParseMode.HTML
         )
 
+
 async def send_lesson_by_user(user, reminder, context):
     lesson_id = reminder.lesson_index
     msg = f"📘 Пройди урок(и):<br/>"
@@ -348,11 +355,22 @@ async def check_reminders(context: CallbackContext):
 
 
 async def diag(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    chat_id = update.effective_chat.id
     await update.message.reply_text(
         f'Привет, {update.effective_user.name}! '
         f'chat.id:{update.effective_chat.id}, '
         f'chat.effective_name: {update.effective_chat.effective_name}!',
         reply_markup=main_keyboard)
+
+    async with async_session() as session:
+        result = await session.execute(select(User).where(User.chat_id == chat_id))
+        user = result.scalar_one_or_none()
+        await update.message.reply_text(
+            f"Расписание: user.id={user.id}, chat_id:{user.chat_id}, schedule: {user.schedule}")
+
+    for job in scheduler.get_jobs():
+        await update.message.reply_text(
+            f"job id:{job.id}, name:{job.name}, trigger:{job.trigger}, next run time:{job.next_run_time}")
 
 
 async def show_all_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -362,6 +380,7 @@ async def show_all_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # todo: добавить кнопку "перейти к прохождению этого урока"
         keyboard = build_lesson_to_today_keyboard
         await update.message.reply_text(msg, parse_mode=ParseMode.HTML, keyboard=keyboard)
+
 
 async def show_planned_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -396,6 +415,7 @@ async def show_planned_lessons(update: Update, context: ContextTypes.DEFAULT_TYP
                 msg = f"<a href='{lesson['link']}'>{lesson['title']}</a> запланирован на {format_date(reminder.remind_at)}"
                 keyboard = build_lesson_to_today_keyboard(reminder.lesson_index)
                 await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard)
+
 
 def build_lesson_to_today_keyboard(lesson_id):
     return InlineKeyboardMarkup([
