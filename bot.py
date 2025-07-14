@@ -369,7 +369,7 @@ async def show_all_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         msg = f"<a href='{lesson['link']}'>{lesson['title']}</a>"
         # todo: добавить кнопку "перейти к прохождению этого урока"
         keyboard = build_lesson_to_today_keyboard(lesson_id)
-        await update.message.reply_text(msg, parse_mode=ParseMode.HTML, keyboard=keyboard)
+        await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard)
 
 
 async def show_planned_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
