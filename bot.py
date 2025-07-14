@@ -1,8 +1,6 @@
 import asyncio
-from _typeshed import SupportsDunderLT, SupportsDunderGT
 from datetime import datetime, timedelta, time
 import os
-from typing import List, Any
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
