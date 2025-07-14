@@ -196,8 +196,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def build_keyboard(lesson_id):
     logger.info(f"build_keyboard(lesson_id={lesson_id})")
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("✅ Прошел, перейти к следующему", callback_data=f"next_lesson_{lesson_id}")],
-        [InlineKeyboardButton("🔁 Отложить на...", callback_data=f"remind_1_{lesson_id}")],
+        [
+            InlineKeyboardButton("✅ Прошел, перейти к следующему", callback_data=f"next_lesson_{lesson_id}"),
+            InlineKeyboardButton("🔁 Отложить на...", callback_data=f"remind_1_{lesson_id}")
+        ],
     ])
 
 
