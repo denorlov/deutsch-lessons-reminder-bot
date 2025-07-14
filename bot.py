@@ -1,6 +1,8 @@
 import asyncio
+from _typeshed import SupportsDunderLT, SupportsDunderGT
 from datetime import datetime, timedelta, time
 import os
+from typing import List, Any
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -239,25 +241,11 @@ async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"lesson_id={lesson_id})")
         await update_reminder_to_next_time(update, lesson_id, interval_days=days, context=context)
 
-    elif query.data.startswith("next_or_prev"):
-        query_request_data = query.data.split("_")
-        lesson_id = int(query_request_data[-1])
-        logger.info(f"lesson_id={lesson_id})")
-        keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("⏭ Готово, к следующему", callback_data=f"next_lesson_{lesson_id}")],
-            [InlineKeyboardButton("⏮ Вернуться к предыдущему", callback_data=f"prev_lesson_{lesson_id}")],
-        ])
-        await query.edit_message_reply_markup(reply_markup=keyboard)
-
     elif query.data.startswith("next_lesson_"):
         query_request_data = query.data.split("_")
         lesson_id = int(query_request_data[-1])
         logger.info(f"lesson_id={lesson_id})")
         await update_reminder_to_next_lesson(update, lesson_id=lesson_id, context=context)
-
-    # elif query.data == "prev_lesson":
-    #     user_data[user_id]["lesson_index"] -= 1
-    #     await send_lesson(query.message.chat_id, user_id, context)
 
 
 async def update_reminder_to_next_lesson(update, lesson_id, context):
@@ -373,6 +361,38 @@ async def show_all_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard = build_keyboard(idx)
         await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard)
 
+async def show_planned_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    async with async_session() as session:
+        result = await session.execute(select(User).where(User.chat_id == chat_id))
+        user = result.scalar_one_or_none()
+
+        if not user:
+            # todo: создать user и reminder
+            await update.message.reply_text("Ты ещё не зарегистрирован. Напиши /start")
+            return
+
+        result = await session.execute(
+            select(Reminder).where(
+                Reminder.user_id == user.id,
+                Reminder.remind_at >= datetime.now()
+            )
+        )
+        logger.info(f"result: {result}")
+        reminders = sorted(reminder.remind_at for reminder in result.fetchall())
+        logger.info(f"reminders: {reminders}")
+
+        if not reminders:
+            await update.message.reply_text("Запланированных уроков нет.")
+            return
+
+        await update.message.reply_text("📋 Запланированные уроки:")
+        for reminder in reminders:
+            if 0 <= reminder.lesson_index < len(lessons):
+                lesson = lessons[reminder.lesson_index]
+                msg = f"<a href='{lesson['link']}'>{lesson['title']}</a>"
+                keyboard = build_keyboard(reminder.lesson_index)
+                await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard)
 
 async def main():
     await init_db()
@@ -383,6 +403,7 @@ async def main():
     app.add_handler(CommandHandler("help", help))
     app.add_handler(CommandHandler("today", show_today_lessons))
     app.add_handler(CommandHandler("all", show_all_lessons))
+    app.add_handler(CommandHandler("planned", show_planned_lessons))
     app.add_handler(CallbackQueryHandler(on_lesson_button))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
