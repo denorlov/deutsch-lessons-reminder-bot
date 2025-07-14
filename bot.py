@@ -138,21 +138,25 @@ async def show_today_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE)
         logger.info(f"indices: {indices}")
 
         if indices:
-            await update.message.reply_text("📋 Уроки на сегодня:")
+            await context.bot.send_message(chat_id=chat_id, text="📋 Уроки на сегодня:")
             for idx in indices:
                 if 0 <= idx < len(lessons):
-                    await show_lesson(update, idx)
+                    await show_lesson(update, context, idx)
         else:
             await update.message.reply_text("На сегодня уроков нет.")
-            show_planned_lessons(update, context)
+            await show_planned_lessons(update, context)
 
 
-async def show_lesson(update, lesson_id):
+async def show_lesson(update, context, lesson_id):
+    chat_id = update.effective_chat.id
     lesson = lessons[lesson_id]
     msg = f"<a href='{lesson['link']}'>{lesson['title']}</a>"
     keyboard = build_keyboard(lesson_id)
-    await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard,
-                                    link_preview_options=LinkPreviewOptions(is_disabled=True))
+    await context.bot.send_message(chat_id=chat_id,
+                                   text=msg,
+                                   parse_mode=ParseMode.HTML,
+                                   reply_markup=keyboard,
+                                   link_preview_options=LinkPreviewOptions(is_disabled=True))
 
 
 async def show_schedule(update: Update, context: ContextTypes.DEFAULT_TYPE):
