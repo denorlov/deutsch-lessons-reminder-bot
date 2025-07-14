@@ -360,7 +360,8 @@ async def show_all_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for idx, lesson in enumerate(lessons):
         msg = f"<a href='{lesson['link']}'>{lesson['title']}</a>"
         # todo: добавить кнопку "перейти к прохождению этого урока"
-        await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
+        keyboard = build_lesson_to_today_keyboard
+        await update.message.reply_text(msg, parse_mode=ParseMode.HTML, keyboard=keyboard)
 
 async def show_planned_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -393,10 +394,10 @@ async def show_planned_lessons(update: Update, context: ContextTypes.DEFAULT_TYP
             if 0 <= reminder.lesson_index < len(lessons):
                 lesson = lessons[reminder.lesson_index]
                 msg = f"<a href='{lesson['link']}'>{lesson['title']}</a> запланирован на {format_date(reminder.remind_at)}"
-                keyboard = build_all_lessons_keyboard(reminder.lesson_index)
+                keyboard = build_lesson_to_today_keyboard(reminder.lesson_index)
                 await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard)
 
-def build_all_lessons_keyboard(lesson_id):
+def build_lesson_to_today_keyboard(lesson_id):
     return InlineKeyboardMarkup([
         [
             InlineKeyboardButton("Перенести на сегодня", callback_data=f"new_reminder_today_lesson_{lesson_id}"),
