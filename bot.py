@@ -215,7 +215,7 @@ async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"lesson_id={lesson_id})")
         keyboard = InlineKeyboardMarkup([
             [
-                [InlineKeyboardButton("✅", callback_data=f"next_lesson_{lesson_id}")],
+                InlineKeyboardButton("✅", callback_data=f"next_lesson_{lesson_id}"),
                 InlineKeyboardButton("1 день", callback_data=f"remind_2_1_{lesson_id}"),
                 InlineKeyboardButton("2 дня", callback_data=f"remind_2_2_{lesson_id}"),
                 InlineKeyboardButton("3 дня", callback_data=f"remind_2_3_{lesson_id}")
