@@ -371,7 +371,7 @@ async def show_planned_lessons(update: Update, context: ContextTypes.DEFAULT_TYP
             )
         )
         logger.info(f"result: {result}")
-        reminders = sorted(reminder.remind_at for reminder in result.fetchall())
+        reminders = sorted(reminder.remind_at for reminder in result.scalars().all())
         logger.info(f"reminders: {reminders}")
 
         if not reminders:
