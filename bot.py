@@ -110,6 +110,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await session.commit()
             await session.refresh(user)
 
+            # todo: set to 00:00:00
             reminder = Reminder(user_id=user.id, lesson_index=0, remind_at=datetime.now())
             session.add(reminder)
             await session.commit()
@@ -282,13 +283,26 @@ def format_date(datetime):
 
 async def set_reminder_for_today(update, lesson_id, context):
     logger.info(f"set_reminder_for_today(lesson_id={lesson_id})")
-    #todo: implement
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=f"Пока не реализовано.",
-        parse_mode=ParseMode.HTML
-    )
+    chat_id = update.effective_chat.id
+    async with async_session() as session:
+        result = await session.execute(select(User).where(User.chat_id == chat_id))
+        user = result.scalar_one_or_none()
 
+        if not user:
+            await start(update, context)
+
+        result = await session.execute(select(Reminder).join(User).where(User.chat_id == chat_id))
+        reminders = result.scalars()
+        for reminder in reminders:
+            session.delete(reminder)
+
+        date = datetime.combine(datetime.today().date(), time.min)
+        reminder = Reminder(user_id=user.id, lesson_index=lesson_id, remind_at=date)
+        session.add(reminder)
+
+        await session.commit()
+
+        await show_today_lessons(update, context)
 
 async def update_reminder_to_next_time(update, lesson_id, interval_days, context):
     logger.info(f"update_reminder_to_next_lesson(lesson_id={lesson_id})")
@@ -367,7 +381,6 @@ async def show_all_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"📚 Все уроки курса:")
     for lesson_id, lesson in enumerate(lessons):
         msg = f"<a href='{lesson['link']}'>{lesson['title']}</a>"
-        # todo: добавить кнопку "перейти к прохождению этого урока"
         keyboard = build_lesson_to_today_keyboard(lesson_id)
         await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard)
 
@@ -410,7 +423,7 @@ async def show_planned_lessons(update: Update, context: ContextTypes.DEFAULT_TYP
 def build_lesson_to_today_keyboard(lesson_id):
     return InlineKeyboardMarkup([
         [
-            InlineKeyboardButton("Перенести на сегодня", callback_data=f"new_reminder_today_lesson_{lesson_id}"),
+            InlineKeyboardButton("Пройти сегодня", callback_data=f"new_reminder_today_lesson_{lesson_id}"),
         ],
     ])
 
