@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 import os
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -196,8 +196,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def build_keyboard(lesson_id):
     logger.info(f"build_keyboard(lesson_id={lesson_id})")
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔁 Напомнить через...", callback_data=f"remind_1_{lesson_id}")],
-        [InlineKeyboardButton("✅ Прошел, перейти к...", callback_data=f"next_or_prev_{lesson_id}")],
+        [InlineKeyboardButton("✅ Прошел, перейти к следующему", callback_data=f"next_lesson_{lesson_id}")],
+        [InlineKeyboardButton("🔁 Отложить на...", callback_data=f"remind_1_{lesson_id}")],
     ])
 
 
@@ -213,18 +213,19 @@ async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"lesson_id={lesson_id})")
         keyboard = InlineKeyboardMarkup([
             [
+                [InlineKeyboardButton("✅", callback_data=f"next_lesson_{lesson_id}")],
                 InlineKeyboardButton("1 день", callback_data=f"remind_2_1_{lesson_id}"),
                 InlineKeyboardButton("2 дня", callback_data=f"remind_2_2_{lesson_id}"),
                 InlineKeyboardButton("3 дня", callback_data=f"remind_2_3_{lesson_id}")
             ],
-            [
-                InlineKeyboardButton("5 дней", callback_data=f"remind_2_5_{lesson_id}"),
-                InlineKeyboardButton("неделю", callback_data=f"remind_2_7_{lesson_id}"),
-            ],
-            [
-                InlineKeyboardButton("2 недели", callback_data=f"remind_2_14_{lesson_id}"),
-                InlineKeyboardButton("месяц", callback_data=f"remind_2_30_{lesson_id}")
-            ]
+            # [
+            #     InlineKeyboardButton("5 дней", callback_data=f"remind_2_5_{lesson_id}"),
+            #     InlineKeyboardButton("неделю", callback_data=f"remind_2_7_{lesson_id}"),
+            # ],
+            # [
+            #     InlineKeyboardButton("2 недели", callback_data=f"remind_2_14_{lesson_id}"),
+            #     InlineKeyboardButton("месяц", callback_data=f"remind_2_30_{lesson_id}")
+            # ]
         ])
         await query.edit_message_reply_markup(reply_markup=keyboard)
 
@@ -279,6 +280,7 @@ async def update_reminder_to_next_lesson(update, lesson_id):
         if next_index < len(lessons):
             # Добавляем напоминание на следующий урок
             reminder.lesson_index = next_index
+            reminder.remind_at = datetime.combine(datetime.today().date(), time.min)
             await session.commit()
             await update.callback_query.edit_message_text(
                 f"✅ Урок {reminder.lesson_index + 1} завершён. Следующий добавлен в напоминания.")
@@ -308,7 +310,7 @@ async def update_reminder_to_next_time(update, lesson_id, interval_days, context
             await update.callback_query.edit_message_text("Напоминание не найдено.")
 
         # меняем дату напоминания
-        now = datetime.now()
+        now = datetime.combine(datetime.today().date(), time.min)
         reminder.remind_at = now + timedelta(days=interval_days)
         await session.commit()
         lesson = lessons[reminder.lesson_index]
