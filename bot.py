@@ -263,7 +263,7 @@ async def update_reminder_to_next_lesson(update, lesson_id, context):
             await session.commit()
             await context.bot.send_message(
                 chat_id=chat_id,
-                text=f"{format_lesson(reminder.lesson_index)} завершён. Следующий добавлен в напоминания.",
+                text=f"{format_lesson(reminder.lesson_index - 1)} завершён. Следующий добавлен в напоминания.",
                 parse_mode=ParseMode.HTML
             )
             await show_today_lessons(update, context)
