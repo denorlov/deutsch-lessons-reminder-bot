@@ -270,7 +270,7 @@ async def update_reminder_to_next_lesson(update, lesson_id, context):
 
         else:
             # Удаляем текущее напоминание
-            await session.delete(reminder)
+            session.delete(reminder)
             await session.commit()
             await context.bot.send_message(chat_id=chat_id, text="🎉 Все уроки пройдены!")
 
@@ -302,11 +302,11 @@ async def set_reminder_for_today(update, lesson_id, context):
         reminders = result.scalars()
         for reminder in reminders:
             logger.info(f"deleting {reminder.id}, {reminder.lesson_index}, {reminder.remind_at}")
-            await session.delete(reminder)
+            session.delete(reminder)
 
         date = datetime.combine(datetime.today().date(), time.min)
         reminder = Reminder(user_id=user.id, lesson_index=lesson_id, remind_at=date)
-        await session.add(reminder)
+        session.add(reminder)
         await session.commit()
 
         await context.bot.send_message(
