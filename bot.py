@@ -301,6 +301,7 @@ async def set_reminder_for_today(update, lesson_id, context):
         result = await session.execute(select(Reminder).join(User).where(User.chat_id == chat_id))
         reminders = result.scalars()
         for reminder in reminders:
+            logger.info(f"deleting {reminder.id}, {reminder.lesson_index}, {reminder.remind_at}")
             await session.delete(reminder)
 
         date = datetime.combine(datetime.today().date(), time.min)
