@@ -133,7 +133,7 @@ async def show_today_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 Reminder.remind_at <= datetime.now()
             )
         )
-        logger.info(f"result: {result}")
+
         indices = sorted(set(row[0] for row in result.fetchall()))
         logger.info(f"indices: {indices}")
 
@@ -263,7 +263,7 @@ async def update_reminder_to_next_lesson(update, lesson_id, context):
             await session.commit()
             await context.bot.send_message(
                 chat_id=chat_id,
-                text=f"✅ Урок {format_lesson(reminder.lesson_index)} завершён. Следующий добавлен в напоминания.",
+                text=f"{format_lesson(reminder.lesson_index)} завершён. Следующий добавлен в напоминания.",
                 parse_mode=ParseMode.HTML
             )
             await show_today_lessons(update, context)
@@ -301,15 +301,20 @@ async def set_reminder_for_today(update, lesson_id, context):
         result = await session.execute(select(Reminder).join(User).where(User.chat_id == chat_id))
         reminders = result.scalars()
         for reminder in reminders:
-            session.delete(reminder)
+            await session.delete(reminder)
 
         date = datetime.combine(datetime.today().date(), time.min)
         reminder = Reminder(user_id=user.id, lesson_index=lesson_id, remind_at=date)
-        session.add(reminder)
-
+        await session.add(reminder)
         await session.commit()
 
-        await show_today_lessons(update, context)
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"{format_lesson(reminder.lesson_index)} добавлен в напоминания.",
+            parse_mode=ParseMode.HTML
+        )
+
+    await show_today_lessons(update, context)
 
 async def update_reminder_to_next_time(update, lesson_id, interval_days, context):
     logger.info(f"update_reminder_to_next_lesson(lesson_id={lesson_id})")
