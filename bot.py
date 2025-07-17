@@ -37,8 +37,10 @@ lessons = [
     {"title": "Lektion 2. Тренировка личных местоимений", "link": "https://t.me/c/2054418094/56?thread=52"},
     {"title": "Lektion 3. Глагол sein (быть)", "link": "https://t.me/c/2054418094/64?thread=58"},
     {"title": "Lektion 4. Тренировка sein. Лексика: прилагательные", "link": "https://t.me/c/2054418094/129?thread=65"},
-    {"title": "Lektion 5. Правила чтения: sch, вокализованный r, w, немой h", "link": "https://t.me/c/2054418094/71?thread=69"},
-    {"title": "Lektion 6. Тренировка sein, рода существительных, лексика", "link": "https://t.me/c/2054418094/75?thread=72"},
+    {"title": "Lektion 5. Правила чтения: sch, вокализованный r, w, немой h",
+     "link": "https://t.me/c/2054418094/71?thread=69"},
+    {"title": "Lektion 6. Тренировка sein, рода существительных, лексика",
+     "link": "https://t.me/c/2054418094/75?thread=72"},
     {"title": "Lektion 7. Rr", "link": "https://t.me/c/2054418094/83?thread=77"},
     {"title": "Lektion 8. Teil 1. Das Auto ist neu: лексика", "link": "https://t.me/c/2054418094/93?thread=78"},
     {"title": "Lektion 8. Teil 2", "link": "https://t.me/c/2054418094/94?thread=79"},
@@ -163,6 +165,7 @@ async def show_schedule(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     await update.message.reply_text("Пока редактирование не доступно")
 
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"update:{update}, context: {context}")
 
@@ -270,7 +273,7 @@ async def update_reminder_to_next_lesson(update, lesson_id, context):
 
         else:
             # Удаляем текущее напоминание
-            session.delete(reminder)
+            await session.delete(reminder)
             await session.commit()
             await context.bot.send_message(chat_id=chat_id, text="🎉 Все уроки пройдены!")
 
@@ -286,7 +289,6 @@ async def delete_reminders(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("Пользователь не найден.")
             return
 
-        # Удаляем все reminders пользователя
         await session.execute(
             delete(Reminder).where(Reminder.user_id == user.id)
         )
@@ -294,9 +296,11 @@ async def delete_reminders(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await update.message.reply_text("🗑️ Все напоминания удалены.")
 
+
 def format_lesson(lesson_id):
     lesson = lessons[lesson_id]
     return f"<a href='{lesson['link']}'>{lesson['title']}</a>"
+
 
 months_ru = [
     "января", "февраля", "марта", "апреля", "мая", "июня",
@@ -316,13 +320,13 @@ async def set_reminder_for_today(update, lesson_id, context):
         user = result.scalar_one_or_none()
 
         if not user:
-            await start(update, context)
+            await update.message.reply_text("Пользователь не найден.")
+            return
 
-        result = await session.execute(select(Reminder).join(User).where(User.chat_id == chat_id))
-        reminders = result.scalars()
-        for reminder in reminders:
-            logger.info(f"deleting {reminder.id}, {reminder.lesson_index}, {reminder.remind_at}")
-            session.delete(reminder)
+        await session.execute(
+            delete(Reminder).where(Reminder.user_id == user.id and Reminder.lesson_index == lesson_id)
+        )
+        await session.commit()
 
         date = datetime.combine(datetime.today().date(), time.min)
         reminder = Reminder(user_id=user.id, lesson_index=lesson_id, remind_at=date)
@@ -336,6 +340,7 @@ async def set_reminder_for_today(update, lesson_id, context):
         )
 
     await show_today_lessons(update, context)
+
 
 async def update_reminder_to_next_time(update, lesson_id, interval_days, context):
     logger.info(f"update_reminder_to_next_lesson(lesson_id={lesson_id})")
@@ -359,7 +364,6 @@ async def update_reminder_to_next_time(update, lesson_id, interval_days, context
         now = datetime.combine(datetime.today().date(), time.min)
         reminder.remind_at = now + timedelta(days=interval_days)
         await session.commit()
-        lesson = lessons[reminder.lesson_index]
         await context.bot.send_message(
             chat_id=chat_id,
             text=f"📅 Хорошо! {format_date(reminder.remind_at)} напомню про {format_lesson(reminder.lesson_index)}.",
@@ -383,7 +387,8 @@ async def check_reminders(context: CallbackContext):
         for reminder in reminders:
             user = await session.get(User, reminder.user_id)
             # todo: сгруппировать по пользователю, каждому пользователю отправлять только одно сообщение Пройди урок(и)
-            await context.bot.send_message(chat_id=user.chat_id, text=f"📘 Пройди урок(и):<br/>", parse_mode=ParseMode.HTML)
+            await context.bot.send_message(chat_id=user.chat_id, text=f"📘 Пройди урок(и):<br/>",
+                                           parse_mode=ParseMode.HTML)
             await send_lesson_by_user(user, reminder, context)
             await session.commit()
 
@@ -401,7 +406,8 @@ async def diag(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user = result.scalar_one_or_none()
         if not user:
             await start(update, context)
-        await update.message.reply_text(f"Расписание: user.id={user.id}, chat_id:{user.chat_id}, schedule: {user.schedule}")
+        await update.message.reply_text(
+            f"Расписание: user.id={user.id}, chat_id:{user.chat_id}, schedule: {user.schedule}")
 
     for job in scheduler.get_jobs():
         await update.message.reply_text(
