@@ -274,6 +274,26 @@ async def update_reminder_to_next_lesson(update, lesson_id, context):
             await session.commit()
             await context.bot.send_message(chat_id=chat_id, text="🎉 Все уроки пройдены!")
 
+
+async def delete_reminders(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+
+    async with async_session() as session:
+        result = await session.execute(select(User).where(User.chat_id == chat_id))
+        user = result.scalar_one_or_none()
+
+        if not user:
+            await update.message.reply_text("Пользователь не найден.")
+            return
+
+        # Удаляем все reminders пользователя
+        await session.execute(
+            delete(Reminder).where(Reminder.user_id == user.id)
+        )
+        await session.commit()
+
+        await update.message.reply_text("🗑️ Все напоминания удалены.")
+
 def format_lesson(lesson_id):
     lesson = lessons[lesson_id]
     return f"<a href='{lesson['link']}'>{lesson['title']}</a>"
@@ -453,6 +473,7 @@ async def main():
     app.add_handler(CommandHandler("planned", show_planned_lessons))
     app.add_handler(CommandHandler("reminders", show_planned_lessons))
     app.add_handler(CommandHandler("future", show_planned_lessons))
+    app.add_handler(CommandHandler("delete", delete_reminders))
 
     app.add_handler(CallbackQueryHandler(on_lesson_button))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
