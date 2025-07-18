@@ -405,7 +405,7 @@ async def update_reminder_to_next_time(update, lesson_id, interval_days, context
         await session.commit()
         await context.bot.send_message(
             chat_id=chat_id,
-            text=f"📅 Хорошо! Напомню про<br/> {format_lesson(reminder.lesson_index)} {format_date(reminder.remind_at)}.",
+            text=f"📅 Хорошо! Напомню про\n {format_lesson(reminder.lesson_index)} {format_date(reminder.remind_at)}.",
             parse_mode=ParseMode.HTML,
             reply_markup=main_keyboard
         )
@@ -427,7 +427,7 @@ async def check_reminders(context: CallbackContext):
         for reminder in reminders:
             user = await session.get(User, reminder.user_id)
             # todo: сгруппировать по пользователю, каждому пользователю отправлять только одно сообщение Пройди урок(и)
-            await context.bot.send_message(chat_id=user.chat_id, text=f"📘 Пройди урок(и):<br/>",
+            await context.bot.send_message(chat_id=user.chat_id, text=f"📘 Пройди урок(и):\n",
                                            parse_mode=ParseMode.HTML)
             await send_lesson_by_user(user, reminder, context)
             await session.commit()
