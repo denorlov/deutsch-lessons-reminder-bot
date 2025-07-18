@@ -427,7 +427,7 @@ async def check_reminders(context: CallbackContext):
         for reminder in reminders:
             user = await session.get(User, reminder.user_id)
             # todo: сгруппировать по пользователю, каждому пользователю отправлять только одно сообщение Пройди урок(и)
-            await context.bot.send_message(chat_id=user.chat_id, text=f"📘 Пройди урок(и):\n",
+            await context.bot.send_message(chat_id=user.chat_id, text=f"📘 Пройди урок(и):\n ",
                                            parse_mode=ParseMode.HTML)
             await send_lesson_by_user(user, reminder, context)
             await session.commit()
@@ -455,9 +455,9 @@ async def diag(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def show_all_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = f"📚 Все уроки курса:<br>"
+    msg = f"📚 Все уроки курса:"
     for lesson_id, lesson in enumerate(lessons):
-        msg = f"{lesson_id}. <a href='{lesson['link']}'>{lesson['title']}</a><br/>"
+        msg = f"\n{lesson_id}. <a href='{lesson['link']}'>{lesson['title']}</a>"
 
     keyboard = all_lessons_keyboard(lesson_id)
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard)
