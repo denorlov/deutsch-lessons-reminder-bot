@@ -278,6 +278,10 @@ async def on_lesson_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"lesson_id={lesson_id})")
         await set_reminder_for_today(update, lesson_id, context)
 
+    elif query.data.startswith("move_lesson_to_today"):
+        chat_id = update.effective_chat.id
+        await context.bot.send_message(chat_id, f"Введите номер урока, который вы хотите перенести на сегодня:")
+
 
 async def update_reminder_to_next_lesson(update, lesson_id, context):
     logger.info(f"update_reminder_to_next_lesson(lesson_id={lesson_id})")
@@ -401,8 +405,9 @@ async def update_reminder_to_next_time(update, lesson_id, interval_days, context
         await session.commit()
         await context.bot.send_message(
             chat_id=chat_id,
-            text=f"📅 Хорошо! {format_date(reminder.remind_at)} напомню про {format_lesson(reminder.lesson_index)}.",
-            parse_mode=ParseMode.HTML
+            text=f"📅 Хорошо! Напомню про<br/> {format_lesson(reminder.lesson_index)} {format_date(reminder.remind_at)}.",
+            parse_mode=ParseMode.HTML,
+            reply_markup=main_keyboard
         )
 
 
@@ -450,12 +455,19 @@ async def diag(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def show_all_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(f"📚 Все уроки курса:")
+    msg = f"📚 Все уроки курса:<br>"
     for lesson_id, lesson in enumerate(lessons):
-        msg = f"<a href='{lesson['link']}'>{lesson['title']}</a>"
-        keyboard = build_lesson_to_today_keyboard(lesson_id)
-        await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard)
+        msg = f"{lesson_id}. <a href='{lesson['link']}'>{lesson['title']}</a><br/>"
 
+    keyboard = all_lessons_keyboard(lesson_id)
+    await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard)
+
+def all_lessons_keyboard(lesson_id):
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("Перенести урок в напоминания", callback_data=f"move_lesson_to_today"),
+        ],
+    ])
 
 async def show_planned_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -475,7 +487,6 @@ async def show_planned_lessons(update: Update, context: ContextTypes.DEFAULT_TYP
             )
         )
         logger.info(f"result: {result}")
-        # todo: отсортировать по дате прохождения
         reminders = result.scalars().all()
         logger.info(f"reminders: {reminders}")
 
@@ -488,11 +499,11 @@ async def show_planned_lessons(update: Update, context: ContextTypes.DEFAULT_TYP
             if 0 <= reminder.lesson_index < len(lessons):
                 lesson = lessons[reminder.lesson_index]
                 msg = f"{format_date(reminder.remind_at)} <a href='{lesson['link']}'>{lesson['title']}</a>"
-                keyboard = build_lesson_to_today_keyboard(reminder.lesson_index)
+                keyboard = future_lesson_keyboard(reminder.lesson_index)
                 await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard)
 
 
-def build_lesson_to_today_keyboard(lesson_id):
+def future_lesson_keyboard(lesson_id):
     return InlineKeyboardMarkup([
         [
             InlineKeyboardButton("Пройти сегодня", callback_data=f"new_reminder_today_lesson_{lesson_id}"),
