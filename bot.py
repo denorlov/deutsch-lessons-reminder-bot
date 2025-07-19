@@ -457,7 +457,7 @@ async def diag(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def show_all_lessons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = f"📚 Все уроки курса:"
     for lesson_id, lesson in enumerate(lessons):
-        msg = f"\n{lesson_id}. <a href='{lesson['link']}'>{lesson['title']}</a>"
+        msg += f"\n{lesson_id}. <a href='{lesson['link']}'>{lesson['title']}</a>"
 
     keyboard = all_lessons_keyboard(lesson_id)
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=keyboard)
